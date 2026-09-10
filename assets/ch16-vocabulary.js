@@ -33,7 +33,7 @@ function current() {
 
 const frontText = item => state.direction === "normal" ? item.kana : (item.original || item.written);
 const backTitle = item => state.direction === "normal" ? (item.original || item.written) : item.kana;
-const sectionLabel = item => sections[item.section]?.label || "第 14 課";
+const sectionLabel = item => sections[item.section]?.label || "第 16 課";
 function scriptLabel(item) { if (item.original) return "英文／外語原寫"; return item.written !== item.kana ? "漢字表記" : "日文表記"; }
 
 function updateStats() {
@@ -95,7 +95,7 @@ $("#vocab-right").onclick = () => mark("right"); $("#vocab-wrong").onclick = () 
 $("#vocab-star").onclick = () => { const item=current(); if(!item)return; state.starred=state.starred.includes(item.id)?state.starred.filter(id=>id!==item.id):[...state.starred,item.id]; renderCard(); };
 $("#vocab-shuffle").onclick = () => { state.random=!state.random; resetPosition(); renderCard(); };
 $("#vocab-jump").onchange = event => { state.index=Math.max(0,Number(event.target.value)-1); flipped=false; renderCard(); };
-$("#reset-vocabulary").onclick = () => { if(confirm("清除全部 208 詞的記憶卡進度、答題標記和收藏？")){state=structuredClone(defaults);renderCard();} };
+$("#reset-vocabulary").onclick = () => { if(confirm("清除全部 185 詞的記憶卡進度、答題標記和收藏？")){state=structuredClone(defaults);renderCard();} };
 document.querySelectorAll("[data-vocab-section]").forEach(button => button.onclick=()=>{state.section=button.dataset.vocabSection;state.filter="all";resetPosition();renderCard();});
 document.querySelectorAll("[data-vocab-direction]").forEach(button => button.onclick=()=>{state.direction=button.dataset.vocabDirection;flipped=false;renderCard();});
 document.querySelectorAll("[data-vocab-filter]").forEach(button => button.onclick=()=>{state.filter=button.dataset.vocabFilter;resetPosition();renderCard();});
