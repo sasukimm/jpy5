@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const data = window.JPY5_CONVERSATION;
   const stage = document.querySelector("#conversation-stage");
   const audio = document.querySelector("#lesson-audio");
-  const fresh = () => ({mode:"dialogue", card:0, flipped:false, attempts:0, marks:{}, mistakes:{}, stars:{}, comprehensionAnswers:{}, comprehensionMistakes:{}});
+  const fresh = () => ({mode:"dialogue", card:0, flipped:false, furigana:true, attempts:0, marks:{}, mistakes:{}, stars:{}, comprehensionAnswers:{}, comprehensionMistakes:{}});
   let state = {...fresh(), ...JPY5.read("conversation", {})};
   let current = 0;
   let built = [];
@@ -10,6 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const item = id => data.items.find(x => x.id === Number(id));
   const esc = value => String(value).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  const kanjiRun=/[\u3400-\u9fff々〆ヶ]/;
+  function ruby(text){if(!state.furigana)return esc(text);const map=new Map(Object.entries(data.furigana||{})),words=[...map.keys()].sort((a,b)=>b.length-a.length),pattern=new RegExp(words.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|"),"g");let out="",last=0;for(const match of String(text).matchAll(pattern)){out+=esc(String(text).slice(last,match.index));const word=match[0],s=data.furiganaSegments?.[word];out+=s?s.map(([b,k])=>k===undefined?esc(b):`<ruby>${esc(b)}<rt>${esc(k)}</rt></ruby>`).join(""):`<ruby>${esc(word)}<rt>${esc(map.get(word))}</rt></ruby>`;last=match.index+word.length}return out+esc(String(text).slice(last))}
+  function embeddedRuby(text){let out=esc(text);for(const phrase of data.embeddedJapanese||[])out=out.split(esc(phrase)).join(ruby(phrase));return out}
+  const rubyIfJapanese=text=>/[ぁ-ゖァ-ヺ]/.test(String(text))?ruby(text):esc(text);
   const clean = value => value.replace(/[\s、。！？?「」『』,.，．]/g, "").trim();
   const save = () => { JPY5.write("conversation", state); updateSummary(); };
   function updateSummary() {
@@ -45,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function showFocusDetail(id) {
     const x=item(id), dialog=document.querySelector("#focus-detail-dialog"); if(!x||!dialog)return;
     dialog.querySelector("#focus-detail-number").textContent=`底線句 0${x.id}`;
-    dialog.querySelector("#focus-detail-title").textContent=x.jp;
+    dialog.querySelector("#focus-detail-title").innerHTML=ruby(x.jp);
     dialog.querySelector("#focus-detail-kana").textContent=x.kana;
     dialog.querySelector("#focus-detail-meaning").textContent=x.zh;
     dialog.querySelector("#focus-detail-use").textContent=x.use;
@@ -57,15 +61,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderDialogue() {
-    stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">完整會話</p><h2>${data.title}</h2></div><button class="chip" id="toggle-focus" type="button">隱藏底線句</button></div><div class="dialogue-list">${data.dialogue.map(row => {
+    stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">完整會話</p><h2>${ruby(data.title)}</h2></div><button class="chip" id="toggle-focus" type="button">隱藏底線句</button></div><div class="dialogue-list">${data.dialogue.map(row => {
       const [speaker,before,id,after] = row;
-      const focus = id ? `<button class="focus-line" data-focus-line="${id}" type="button" aria-haspopup="dialog" aria-label="查看底線句解釋：${esc(item(id).jp)}">${esc(item(id).jp)}</button>` : "";
-      return `<article class="dialogue-row"><b>${esc(speaker)}</b><p>${esc(before)}${focus}${esc(after || "")}</p>${id ? listenButton(id,"播放這句") : ""}</article>`;
+      const focus = id ? `<button class="focus-line" data-focus-line="${id}" data-answer-text="${esc(item(id).jp)}" type="button" aria-haspopup="dialog">${ruby(item(id).jp)}</button>` : "";
+      return `<article class="dialogue-row"><b>${ruby(speaker)}</b><p>${ruby(before)}${focus}${ruby(after || "")}</p>${id ? listenButton(id,"播放這句") : ""}</article>`;
     }).join("")}</div>`;
     let hidden = false;
     stage.querySelector("#toggle-focus").onclick = e => {
       hidden = !hidden;
-      stage.querySelectorAll(".focus-line").forEach(x => { x.textContent = hidden ? "＿＿＿＿＿＿＿＿" : item(x.dataset.focusLine).jp; x.disabled=hidden; });
+      stage.querySelectorAll(".focus-line").forEach(x => { x.innerHTML = hidden ? "＿＿＿＿＿＿＿＿" : ruby(x.dataset.answerText); x.disabled=hidden; });
       e.currentTarget.textContent = hidden ? "顯示底線句" : "隱藏底線句";
       e.currentTarget.classList.toggle("active", hidden);
     };
@@ -75,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function renderCards() {
     const x = data.items[state.card % data.items.length];
-    stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">記憶卡</p><h2>底線句子卡</h2></div><span>${state.card + 1} / ${data.items.length}</span></div><button class="conversation-card ${state.flipped?'is-flipped':''}" id="conversation-card" type="button"><span class="card-face front"><small>中文意思／用途</small><strong>${esc(x.zh)}</strong><em>點擊或按 Space 翻面</em></span><span class="card-face back"><small>日本語</small><strong>${esc(x.jp)}</strong><em>${esc(x.use)}</em></span></button><div class="card-actions"><button data-card-nav="prev">←</button><button class="danger" data-mark="wrong">×</button><button class="success" data-mark="correct">✓</button><button data-star="${x.id}" class="${state.stars[x.id]?'is-starred':''}">${state.stars[x.id]?'★':'☆'}</button><button data-card-nav="next">→</button></div><div class="card-listen">${listenButton(x.id)}</div>`;
+    stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">記憶卡</p><h2>底線句子卡</h2></div><span>${state.card + 1} / ${data.items.length}</span></div><button class="conversation-card ${state.flipped?'is-flipped':''}" id="conversation-card" type="button"><span class="card-face front"><small>中文意思／用途</small><strong>${esc(x.zh)}</strong><em>點擊或按 Space 翻面</em></span><span class="card-face back"><small>題目 · 中文意思／用途</small><strong class="card-retained-prompt">${esc(x.zh)}</strong><span class="card-answer-label">答案 · 日本語</span><strong>${esc(x.jp)}</strong><em>${esc(x.use)}</em></span></button><div class="card-actions"><button data-card-nav="prev">←</button><button class="danger" data-mark="wrong">×</button><button class="success" data-mark="correct">✓</button><button data-star="${x.id}" class="${state.stars[x.id]?'is-starred':''}">${state.stars[x.id]?'★':'☆'}</button><button data-card-nav="next">→</button></div><div class="card-listen">${listenButton(x.id)}</div>`;
     stage.querySelector("#conversation-card").onclick = () => { state.flipped = !state.flipped; save(); render(); };
   }
   function renderChoice() {
@@ -94,7 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderComprehension() {
     stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">教材問題</p><h2>內容與表現理解</h2></div><span>${data.comprehension.length} 題</span></div><div class="reading-question-list">${data.comprehension.map((q,index) => {
       const selected=state.comprehensionAnswers[q.id], answered=selected!==undefined;
-      return `<article class="reading-question" data-comprehension="${q.id}"><span>${q.kind} · ${String(index+1).padStart(2,"0")}</span><h3>${esc(q.q)}</h3><div>${q.options.map((option,i)=>`<button data-comprehension-answer="${i}" ${answered?"disabled":""} class="${answered&&i===q.answer?"correct":answered&&i===selected&&i!==q.answer?"wrong":""}">${esc(option)}</button>`).join("")}</div><p class="reading-feedback">${answered?`${selected===q.answer?"答對。":"未正確。"}${esc(q.why)}`:""}</p></article>`;
+      return `<article class="reading-question" data-comprehension="${q.id}"><span>${q.kind} · ${String(index+1).padStart(2,"0")}</span><h3>${embeddedRuby(q.q)}</h3><div>${q.options.map((option,i)=>`<button data-comprehension-answer="${i}" ${answered?"disabled":""} class="${answered&&i===q.answer?"correct":answered&&i===selected&&i!==q.answer?"wrong":""}">${rubyIfJapanese(option)}</button>`).join("")}</div><p class="reading-feedback">${answered?`${selected===q.answer?"答對。":"未正確。"}${embeddedRuby(q.why)}`:""}</p></article>`;
     }).join("")}</div>`;
     stage.querySelectorAll("[data-comprehension-answer]").forEach(button => button.onclick = () => {
       const card=button.closest("[data-comprehension]"), q=data.comprehension.find(entry=>entry.id===card.dataset.comprehension), selected=Number(button.dataset.comprehensionAnswer), ok=selected===q.answer;
@@ -120,10 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
     stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">會話填寫</p><h2>一口氣填回八個目標</h2></div><span>${data.items.length} 個編號位置</span></div><article class="practice-panel"><div class="cloze-intro"><button class="listen-button" id="play-full" type="button">▶ 由開頭播放全段</button><p>先聽完整會話，再在編號位置輸入答案。標點及空格不影響評分。</p></div><div class="dialogue-list cloze-list">${data.dialogue.map(row => {
       const [speaker,before,id,after] = row;
       const blank = id ? `<label class="cloze-blank"><span>底線 ${id}</span><input data-cloze="${id}" lang="ja" autocomplete="off" placeholder="輸入聽到的句子"></label>` : "";
-      return `<article class="dialogue-row"><b>${esc(speaker)}</b><p>${esc(before)}${blank}${esc(after || "")}</p></article>`;
+      return `<article class="dialogue-row"><b>${ruby(speaker)}</b><p>${ruby(before)}${blank}${ruby(after || "")}</p></article>`;
     }).join("")}</div><div class="practice-actions"><button class="text-button" id="reveal-cloze">顯示答案</button><button class="primary-button" id="check-cloze">檢查八項</button></div><p class="answer-message"></p></article>`;
     stage.querySelector("#play-full").onclick = () => { audio.currentTime=0; audio.play().catch(()=>{}); };
-    stage.querySelector("#reveal-cloze").onclick = () => data.items.forEach(x => { stage.querySelector(`[data-cloze="${x.id}"]`).value=x.jp; });
+    stage.querySelector("#reveal-cloze").onclick = () => data.items.forEach(x => { const input=stage.querySelector(`[data-cloze="${x.id}"]`);input.value=x.jp;let output=input.nextElementSibling;if(!output?.matches(".cloze-ruby-answer")){output=document.createElement("output");output.className="cloze-ruby-answer";input.after(output)}output.innerHTML=ruby(x.jp); });
     stage.querySelector("#check-cloze").onclick = () => {
       let score=0;
       data.items.forEach(x => { const input=stage.querySelector(`[data-cloze="${x.id}"]`); const ok=clean(input.value)===clean(x.jp); input.classList.toggle("correct",ok); input.classList.toggle("wrong",!ok); record(x.id,ok); if(ok)score++; });
@@ -133,10 +137,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderDictation() {
     const x = data.items[current % data.items.length];
     stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">精確默寫</p><h2>聽完寫出整句</h2></div><span>${current + 1} / ${data.items.length}</span></div><article class="practice-panel dictation-panel">${listenButton(x.id,"播放考題")}<p>${esc(x.zh)}</p><label>輸入日文句子<textarea id="dictation-answer" rows="4" lang="ja" autocomplete="off" placeholder="ここに入力してください"></textarea></label><div class="practice-actions"><button class="text-button" id="show-answer">顯示答案</button><button class="primary-button" id="check-dictation">檢查答案</button></div><p class="answer-message"></p></article>`;
-    stage.querySelector("#show-answer").onclick = () => stage.querySelector(".answer-message").textContent = x.jp;
+    stage.querySelector("#show-answer").onclick = () => stage.querySelector(".answer-message").innerHTML = ruby(x.jp);
     stage.querySelector("#check-dictation").onclick = () => {
       const ok = clean(stage.querySelector("#dictation-answer").value) === clean(x.jp); record(x.id,ok);
-      stage.querySelector(".answer-message").textContent = ok ? "完全正確！" : `未完全一致。正確句子：${x.jp}`;
+      stage.querySelector(".answer-message").innerHTML = ok ? "完全正確！" : `未完全一致。正確句子：${ruby(x.jp)}`;
       if (ok) setTimeout(() => { current=(current+1)%data.items.length; render(); }, 1000);
     };
   }
@@ -152,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function render() {
     const renderers = {dialogue:renderDialogue,comprehension:renderComprehension,focus:renderFocus,cards:renderCards,choice:renderChoice,order:renderOrder,cloze:renderCloze,dictation:renderDictation,mistakes:renderMistakes};
     (renderers[state.mode] || renderDialogue)();
+    stage.querySelectorAll('.focus-card h3,.conversation-options button,.sentence-build button,.word-bank button,.card-answer-label + strong,.mistake-list h3').forEach(node=>node.innerHTML=ruby(node.textContent));
     stage.querySelectorAll("[data-focus-line]").forEach(b => b.onclick = () => showFocusDetail(b.dataset.focusLine));
     stage.querySelectorAll("[data-listen]").forEach(b => b.onclick = () => play(b.dataset.listen));
     stage.querySelectorAll("[data-star]").forEach(b => b.onclick = () => { const id=b.dataset.star; state.stars[id] = !state.stars[id]; save(); render(); });
@@ -161,6 +166,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+  document.querySelector("#furigana-toggle").onclick=e=>{state.furigana=!state.furigana;e.currentTarget.textContent=`假名 ${state.furigana?'ON':'OFF'}`;save();render();};
+  document.querySelector("#furigana-toggle").textContent=`假名 ${state.furigana?'ON':'OFF'}`;
   const detailDialog=document.querySelector("#focus-detail-dialog");
   detailDialog.querySelector("[data-dialog-close]").onclick=()=>detailDialog.close();
   detailDialog.querySelector("[data-dialog-listen]").onclick=e=>play(e.currentTarget.dataset.dialogListen);
