@@ -22,7 +22,7 @@ for (const page of pages) {
   assert.match(html, /<script src="assets\/analytics\.js" defer><\/script>/, `${page} does not load production analytics`);
   assert(assetMatches.includes(page), `${page} is missing from the offline inventory`);
 }
-assert.equal(pages.length, 46, "unexpected page count; review the offline inventory");
+assert.equal(pages.length, 55, "unexpected page count; review the offline inventory");
 assert.equal(manifest.scope, "/jpy5/");
 assert.equal(manifest.start_url, "/jpy5/");
 assert.match(serviceWorker, /importScripts\("assets\/offline-assets\.js"\)/);
@@ -43,6 +43,8 @@ assert.match(pwa, /label: "下載中"/);
 assert.match(pwa, /label: "下載未完成"/);
 assert.match(styles, /\.pwa-status\{display:inline-flex/);
 assert.match(styles, /\.pwa-status\{grid-column:1\/-1;grid-row:2/, "narrow headers need a second status row");
+assert.match(styles, /@media\(max-width:1200px\)\{\.vocab-complete-layout\{grid-template-columns:minmax\(0,1fr\)/, "iPad vocabulary panels must stack");
+assert.match(styles, /\.vocab-row em\{display:block;grid-column:2\/-1\}/, "mobile rows must retain the word type");
 assert.match(analytics, /location\.origin !== "https:\/\/yuktun\.github\.io"/);
 assert.match(analytics, /location\.pathname\.startsWith\("\/jpy5\/"\)/);
 assert.match(analytics, /https:\/\/sasukimm-jp5y\.goatcounter\.com\/count/);
