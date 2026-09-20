@@ -1,16 +1,34 @@
 :root {
-  --paper: #f8f4ec;
-  --ink: #22231f;
-  --muted: #6f7069;
-  --line: #d9d2c5;
-  --red: #c9493d;
-  --red-dark: #92352e;
-  --sage: #dfe5d8;
-  --yellow: #f0d777;
-  --white: #fffdf8;
-  --button-bg: #22231f;
-  --button-text: #fffdf8;
-  --shadow: 0 14px 38px rgba(49, 42, 31, .08);
+  /* Year 5 textbook palette. Components below inherit from these semantic tokens. */
+  --primary: #829d34;
+  --primary-dark: #34412b;
+  --primary-light: #dce8d3;
+  --background: #faf9f3;
+  --accent: #795583;
+  --success: #e5f1db;
+  --success-strong: #3f693c;
+  --danger: #b94843;
+  --danger-dark: #722c29;
+  --danger-light: #f9e7e4;
+  --ink: #263026;
+  --muted: #667064;
+  --line: #cbd7c3;
+  --paper: var(--background);
+  --sage: var(--primary-light);
+  --yellow: #d5bd62;
+  --white: #fffef9;
+  --button-bg: var(--primary-dark);
+  --button-text: #fffef9;
+  /* Compatibility aliases for existing shared component selectors. */
+  --red: var(--primary);
+  --red-dark: var(--primary-dark);
+  --shadow: 0 14px 38px rgba(52, 65, 43, .10);
+  --reading-surface: #f1f6ed;
+  --reading-border: #c2d3b7;
+  --reading-deep: var(--primary-dark);
+  --reading-mid: #557334;
+  --reading-pale: #dce8d3;
+  --success-text: #254c2b;
 }
 
 * { box-sizing: border-box; }
@@ -178,7 +196,7 @@ html[data-theme="dark"] .resource-card.featured,html[data-theme="dark"] .review-
 .mode-tabs{display:flex;gap:6px;margin-top:24px;padding:6px;overflow-x:auto;background:var(--white);border:1px solid var(--line);border-radius:10px;scrollbar-width:none}.mode-tabs::-webkit-scrollbar{display:none}.mode-tabs button{flex:0 0 auto;padding:10px 15px;color:var(--muted);background:transparent;border:0;border-radius:6px;font:inherit;font-size:.8rem;cursor:pointer;white-space:nowrap}.mode-tabs button.active{color:var(--button-text);background:var(--button-bg)}
 .conversation-stage{min-height:520px;padding:36px 0 50px}.stage-heading{display:flex;align-items:end;justify-content:space-between;gap:22px;margin-bottom:20px}.stage-heading h2{margin:3px 0;font:500 clamp(1.7rem,4vw,2.6rem) "Yu Mincho",serif}.stage-heading>span{color:var(--muted);font-size:.78rem}.stage-heading .chip{border:1px solid var(--line)}
 .dialogue-list{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:9px;overflow:hidden}.dialogue-row{display:grid;grid-template-columns:120px 1fr auto;align-items:start;gap:20px;padding:18px 20px;background:var(--white)}.dialogue-row>b{color:var(--red);font-size:.78rem}.dialogue-row p{margin:0}.focus-line{display:inline;padding:1px 4px;color:var(--ink);background:color-mix(in srgb,var(--yellow) 50%,transparent);border:0;border-bottom:2px solid var(--red);border-radius:0;font:inherit;line-height:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}.focus-line:hover,.focus-line:focus-visible{background:color-mix(in srgb,var(--yellow) 78%,transparent);outline:2px solid var(--red);outline-offset:2px}.focus-line:disabled{cursor:default;opacity:.75;outline:0}
-.focus-detail-dialog{width:min(620px,calc(100% - 32px));padding:0;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.28)}.focus-detail-dialog::backdrop{background:rgba(8,10,8,.68);backdrop-filter:blur(3px)}.focus-detail-dialog[open]{animation:detail-in .18s ease-out}.focus-detail-dialog>*:not(.focus-detail-head){margin-left:30px;margin-right:30px}.focus-detail-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}.focus-detail-head span{color:var(--red);font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.focus-detail-head button{width:40px;height:40px;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:50%;font-size:1.45rem;line-height:1;cursor:pointer}.focus-detail-dialog h2{margin-top:26px;margin-bottom:8px;font-family:var(--serif);font-size:clamp(1.45rem,4vw,2rem);line-height:1.45}.focus-detail-kana{margin-top:0;color:var(--muted);font-size:.9rem}.focus-detail-meaning{padding:16px 18px;color:var(--ink);background:color-mix(in srgb,var(--yellow) 28%,var(--white));border-radius:10px;font-weight:700}.focus-detail-dialog dl{display:grid;gap:12px;margin-top:20px;margin-bottom:22px}.focus-detail-dialog dl div{display:grid;grid-template-columns:54px 1fr;gap:12px}.focus-detail-dialog dt{color:var(--red);font-size:.73rem;font-weight:800;letter-spacing:.08em}.focus-detail-dialog dd{margin:0;color:var(--muted);line-height:1.75}.focus-detail-dialog>.listen-button{margin-bottom:30px}@keyframes detail-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.focus-detail-dialog{width:min(620px,calc(100% - 32px));padding:0;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.28)}.focus-detail-dialog::backdrop{background:rgba(8,10,8,.68);backdrop-filter:blur(3px)}.focus-detail-dialog[open]{animation:detail-in .18s ease-out}.focus-detail-dialog>*:not(.focus-detail-head){margin-left:30px;margin-right:30px}.focus-detail-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}.focus-detail-head span{color:var(--red);font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.focus-detail-head button{width:40px;height:40px;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:50%;font-size:1.45rem;line-height:1;cursor:pointer}.focus-detail-dialog h2{margin-top:26px;margin-bottom:8px;font-family:var(--serif);font-size:clamp(1.45rem,4vw,2rem);line-height:1.45}.focus-detail-kana{margin-top:0;color:var(--muted);font-size:.9rem}.focus-detail-meaning{padding:16px 18px;color:var(--ink);background:color-mix(in srgb,var(--yellow) 28%,var(--white));border-radius:10px;font-weight:700}.focus-detail-dialog dl{display:grid;gap:12px;margin-top:20px;margin-bottom:22px}.focus-detail-dialog dl div{display:grid;grid-template-columns:54px 1fr;gap:12px}.focus-detail-dialog dt{color:var(--red);font-size:.73rem;font-weight:800;letter-spacing:.08em}.focus-detail-dialog dd{margin:0;color:var(--muted);line-height:1.75}.focus-detail-dialog>.listen-button{margin-bottom:30px}@keyframes detail-in{from{opacity:0;transform:translate(-50%,calc(-50% + 10px)) scale(.98)}to{opacity:1;transform:translate(-50%,-50%)}}
 .listen-button{align-self:center;padding:7px 11px;color:var(--red);background:transparent;border:1px solid var(--line);border-radius:99px;font:inherit;font-size:.72rem;cursor:pointer;white-space:nowrap}.listen-button:hover{border-color:var(--red)}
 .focus-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.focus-card{position:relative;min-height:270px;padding:28px;background:var(--white);border:1px solid var(--line);border-radius:8px}.focus-number{color:var(--red);font:500 1.3rem Georgia,serif}.focus-card h3{margin:18px 30px 8px 0;font:500 1.45rem "Yu Mincho",serif}.focus-card>p{color:var(--muted);font-size:.86rem}.focus-card .focus-meaning{color:var(--ink);font-size:.95rem}.star-button{position:absolute;right:20px;top:20px;color:var(--muted);background:none;border:0;font-size:1.5rem;cursor:pointer}.star-button.active,.is-starred{color:#aa7800!important}
 .conversation-card{position:relative;width:100%;min-height:340px;padding:0;background:transparent;border:0;perspective:1000px;cursor:pointer}.card-face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:38px;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);backface-visibility:hidden;transition:transform .38s}.card-face.back{transform:rotateY(180deg);overflow:auto;background:var(--ink);color:var(--paper)}.conversation-card.is-flipped .front{transform:rotateY(180deg)}.conversation-card.is-flipped .back{transform:rotateY(360deg)}.card-face small{color:var(--red);font-size:.72rem;letter-spacing:.13em}.card-face strong{max-width:760px;margin:22px 0;font:500 clamp(1.7rem,4vw,2.8rem) "Yu Mincho",serif}.card-face.back strong.card-retained-prompt{margin:12px 0;color:#d8d3ca;font:500 clamp(1.05rem,2.5vw,1.45rem) "Yu Mincho",serif}.card-face.back .card-answer-label{margin-top:5px;color:var(--red)}.card-face em{color:var(--muted);font-style:normal;font-size:.8rem}.card-face.back em{color:#c9c5bb}.card-listen{text-align:center;margin-top:12px}
@@ -217,13 +235,15 @@ html.learning-guide-open{overflow:hidden}@media(max-width:720px){.home-header-ac
 .grammar-extra-head,.grammar-extra-footer{flex:0 0 auto}
 .grammar-extra-body{flex:1 1 auto;min-height:0;max-height:none;overflow-x:hidden;overflow-y:auto}
 .learning-guide-body{max-height:none}
-.focus-detail-dialog{display:flex;flex-direction:column;height:min(88dvh,680px);max-height:calc(100dvh - 32px);overflow:hidden}
+.focus-detail-dialog{max-height:calc(100dvh - 32px);overflow:hidden}
+.focus-detail-dialog:not([open]){display:none}
+.focus-detail-dialog[open]{display:flex;position:fixed;top:50%;left:50%;flex-direction:column;margin:0;transform:translate(-50%,-50%)}
 .focus-detail-head,.focus-detail-footer{flex:0 0 auto}
 .focus-detail-dialog>*:not(.focus-detail-head){margin-left:0;margin-right:0}
 .focus-detail-body{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;padding:0 30px 22px;overscroll-behavior:contain}
 .focus-detail-footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 30px;border-top:1px solid var(--line)}
 .focus-detail-footer .listen-button{margin:0}
-@media(max-width:720px){.grammar-extra-dialog{height:calc(100dvh - 16px);max-height:calc(100dvh - 16px)}.grammar-extra-body{max-height:none}.focus-detail-dialog{height:calc(100dvh - 20px);max-height:calc(100dvh - 20px)}.focus-detail-body{padding:0 20px 18px}.focus-detail-footer{padding:13px 20px}}
+@media(max-width:720px){.grammar-extra-dialog{height:calc(100dvh - 16px);max-height:calc(100dvh - 16px)}.grammar-extra-body{max-height:none}.focus-detail-dialog{max-height:calc(100dvh - 20px)}.focus-detail-body{padding:0 20px 18px}.focus-detail-footer{padding:13px 20px}}
 
 /* Grammar readings */
 .grammar-card ruby,.flashcard ruby,.quiz-setup ruby,.quiz-runner ruby,.quiz-result ruby,.history-list ruby{ruby-align:center;ruby-position:over}.grammar-card rt,.flashcard rt,.quiz-setup rt,.quiz-runner rt,.quiz-result rt,.history-list rt{color:inherit;font-family:"Noto Sans JP","Yu Gothic",sans-serif;font-size:.6em;font-weight:400;letter-spacing:0;opacity:.8}.example-jp,.quiz-options button,.question-card h2,.history-answer{min-width:0;max-width:100%;white-space:normal;line-break:strict;word-break:normal;overflow-wrap:break-word}
@@ -249,3 +269,23 @@ html[data-theme="dark"] .grammar-target{background:rgba(240,215,119,.22)}
 .lesson-quick-switcher{position:sticky;top:max(8px,env(safe-area-inset-top));z-index:20;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;width:min(1120px,calc(100% - 40px));margin:10px auto 4px;padding:9px 11px;background:color-mix(in srgb,var(--white) 94%,transparent);border:1px solid var(--line);border-radius:12px;box-shadow:0 5px 18px rgba(42,42,36,.09);backdrop-filter:blur(10px)}.lesson-select-label{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:.75rem;font-weight:700;white-space:nowrap}.lesson-select{min-height:38px;padding:6px 28px 6px 10px;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:700}.lesson-quick-sections{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.lesson-quick-sections a,.lesson-module-unavailable{display:flex;align-items:center;justify-content:center;min-height:38px;padding:7px 9px;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:8px;font-size:.82rem;font-weight:700;line-height:1.15;text-align:center;text-decoration:none}.lesson-quick-sections a:hover,.lesson-quick-sections a:focus-visible{color:var(--ink);border-color:var(--red)}.lesson-quick-sections a.active{color:var(--button-text);background:var(--button-bg);border-color:var(--button-bg)}.lesson-module-unavailable{border-style:dashed;opacity:.6}.lesson-navigation-status{grid-column:1/-1;margin:0;color:var(--muted);font-size:.78rem}
 @media(max-width:900px){.lesson-quick-switcher{grid-template-columns:1fr}.lesson-select-label{justify-content:center}.lesson-quick-sections{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(max-width:520px){.lesson-quick-switcher{top:max(6px,env(safe-area-inset-top));width:calc(100% - 24px);margin-top:8px;padding:8px}.lesson-quick-sections{gap:4px}.lesson-quick-sections a,.lesson-module-unavailable{min-height:38px;padding:6px 3px;font-size:.74rem}.lesson-select{min-height:36px}.lesson-navigation-status{font-size:.72rem}}
+
+/* Year 5 textbook green theme: component-level semantic overrides. */
+.hero::after{color:color-mix(in srgb,var(--primary) 12%,transparent)}
+.formation{border-left-color:var(--primary);background:color-mix(in srgb,var(--primary-light) 58%,var(--white))}
+.option.correct,.quiz-options button.correct,.conversation-options button.correct,.cloze-blank input.correct,.reading-question button.correct,.find-passages button.correct{border-color:var(--success-strong);background:var(--success);color:var(--success-text)}
+.option.wrong,.quiz-options button.wrong,.conversation-options button.wrong,.cloze-blank input.wrong,.reading-question button.wrong,.find-passages button.wrong{border-color:var(--danger);background:var(--danger-light);color:var(--danger-dark)}
+.accent-red .tool-icon{background:var(--primary)}.accent-sage .tool-icon{background:var(--accent)}.reading-tool .tool-icon{background:var(--reading-mid)}.reading-tool{border-color:var(--reading-border)}
+.card-actions .success{color:var(--success-strong)}.card-actions .danger,.danger-text{color:var(--danger)}.history-answer{border-left-color:var(--success-strong)}.history-answer.is-wrong{border-color:var(--danger)}
+.progress-bar i,.hub-progress span{background:var(--primary)}.quiz-options button.selected{border-color:var(--primary-dark);background:var(--primary-light)}
+.grammar-extra-option.is-correct{color:var(--success-text);background:var(--success);border-color:var(--success-strong)}.grammar-extra-option.is-incorrect{color:var(--danger-dark);background:var(--danger-light);border-color:var(--danger)}
+.pwa-status[data-state="ready"],.pwa-status[data-state="offline"]{color:var(--success-text);border-color:var(--success-strong)}.pwa-status[data-state="ready"] .pwa-status-dot,.pwa-status[data-state="offline"] .pwa-status-dot{background:var(--success-strong)}.pwa-status[data-state="offline"] .pwa-status-dot{box-shadow:0 0 0 2px color-mix(in srgb,var(--success-strong) 18%,transparent)}.pwa-status[data-state="error"]{color:var(--danger-dark);border-color:var(--danger)}.pwa-status[data-state="error"] .pwa-status-dot{background:var(--danger)}
+
+/* Reading uses the same palette rather than its former independent blue treatment. */
+.reading-shell{background:linear-gradient(180deg,var(--reading-surface) 0,var(--background) 520px)}.reading-hero{background:linear-gradient(135deg,var(--reading-deep),var(--reading-mid));box-shadow:0 18px 45px color-mix(in srgb,var(--primary-dark) 18%,transparent)}.reading-hero .kicker{color:var(--primary-light)}.reading-hero p:last-child,.reading-audio-workspace p:last-child,.find-prompt p{color:#e4eddf}
+.reading-controls,.reading-paper,.translation-list article,.reading-question,.find-passages button,.reading-vocab-card,.exam-list article,.exam-submit{border-color:var(--reading-border)}.lesson-pills a:hover,.lesson-pills a:focus-visible{color:var(--primary-dark);border-color:var(--primary)}.lesson-pills a.active{color:var(--primary-dark);background:var(--primary-light);border-color:var(--primary)}.reading-tabs button.active,.reading-audio-workspace,.find-prompt,.reading-vocab-card.flipped,.reading-result{background:var(--reading-deep)}.reading-stage-head h2,.reading-badge{color:var(--primary-dark)}.reading-badge{background:var(--primary-light)}.translation-list span,.reading-question>span,.exam-list article>span,.find-passages span,.reading-vocab-card>span{color:var(--reading-mid)}.vocab-overview button.active{background:var(--reading-mid)}.reading-vocab-card .reading-card-answer{color:var(--accent)}.reading-vocab-card.flipped small,.reading-result p{color:#e4eddf}
+
+/* Preserve the dark-mode option while retaining green rather than pink accents. */
+html[data-theme="dark"],html[data-theme="auto"]{--primary:#a4be62;--primary-dark:#dce8d3;--primary-light:#30452d;--accent:#c4a6ca;--success:#294226;--success-strong:#8eba78;--danger:#ef817a;--danger-dark:#ffd4cf;--danger-light:#4d2926;--background:#121711;--paper:#121711;--ink:#f4f7ed;--muted:#c6d0c1;--line:#475640;--sage:#30452d;--white:#1d261b;--button-bg:#a4be62;--button-text:#172014;--red:var(--primary);--red-dark:#dce8d3;--reading-surface:#172116;--reading-border:#526849;--reading-deep:#263d25;--reading-mid:#789b55;--reading-pale:#30452d;--success-text:#edf8e9}
+html[data-theme="dark"] .reading-shell{background:linear-gradient(180deg,var(--reading-surface) 0,var(--paper) 520px)}html[data-theme="dark"] .reading-stage-head h2{color:var(--primary-dark)}html[data-theme="dark"] .lesson-pills a.active{color:var(--primary-dark);background:var(--primary-light);border-color:var(--primary)}
+@media(prefers-color-scheme:dark){html[data-theme="auto"] .reading-shell{background:linear-gradient(180deg,var(--reading-surface) 0,var(--paper) 520px)}html[data-theme="auto"] .reading-stage-head h2{color:var(--primary-dark)}html[data-theme="auto"] .lesson-pills a.active{color:var(--primary-dark);background:var(--primary-light);border-color:var(--primary)}}
