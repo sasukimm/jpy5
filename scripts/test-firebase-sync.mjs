@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {CLOUD_SCHEMA_VERSION,cloudState,hasProgress,mergeSnapshots} from '../assets/firebase-sync.mjs';
+
+const local={
+  'jpy5.chapter13.vocabulary.cards.v2':JSON.stringify({results:{word1:{correct:2}}}),
+  'jpy5.chapter14.quiz.history':JSON.stringify([{id:'local',score:8}])
+};
+const cloud={
+  'jpy5.chapter13.vocabulary.cards.v2':JSON.stringify({results:{word2:{correct:1}}}),
+  'jpy5.chapter15.conversation':JSON.stringify({attempts:2}),
+  'jpy5.chapter14.quiz.history':JSON.stringify([{id:'cloud',score:7}])
+};
+const merged=mergeSnapshots(local,cloud);
+assert.deepEqual(JSON.parse(merged['jpy5.chapter13.vocabulary.cards.v2']).results,{word2:{correct:1},word1:{correct:2}},'first login keeps local and cloud vocabulary records');
+assert.deepEqual(JSON.parse(merged['jpy5.chapter14.quiz.history']).map(item=>item.id).sort(),['cloud','local'],'first login keeps both quiz histories');
+assert.equal(merged['jpy5.chapter15.conversation'],cloud['jpy5.chapter15.conversation'],'cloud-only progress restores on an empty local device');
+assert.equal(hasProgress({}),false,'empty local state remains a valid guest state');
+assert.equal(hasProgress(local),true,'existing guest progress is detected for upload');
+const record=cloudState(merged,'server timestamp');
+assert.equal(record.schemaVersion,CLOUD_SCHEMA_VERSION,'cloud documents carry a version for future migration');
+assert.deepEqual(record.progress,merged,'the document stores the exact existing localStorage payloads without rewriting lesson schemas');
+for(const file of ['assets/common.js',...['14','15','16','17','18'].map(lesson=>`assets/ch${lesson}-common.js`)]){
+  const source=await readFile(file,'utf8');
+  assert.match(source,/import\("\.\/firebase-sync\.mjs"\)/,`${file} loads the sync module from its own assets directory`);
+  assert.doesNotMatch(source,/import\("\.\/assets\/firebase-sync\.mjs"\)/,`${file} must not resolve a duplicate assets directory`);
+}
+const home=await readFile('index.html','utf8');
+const syncSource=await readFile('assets/firebase-sync.mjs','utf8');
+assert.match(home,/data-sync-guest-status[^>]*aria-live="polite"/,'signed-out users receive visible live login status');
+assert.match(home,/data-sync-login disabled/,'login remains disabled until Firebase is ready');
+assert.match(syncSource,/正在開啟 Google 登入…/,'opening the login popup is reported to guest users');
+assert.match(syncSource,/signInWithPopup/,'the Google button uses Firebase popup login');
+assert.match(syncSource,/service=result;/,'the resolved Firebase service is retained before use');
+assert.match(syncSource,/onAuthStateChanged\(service\.auth,handleUser\)/,'the auth observer starts only after the Firebase service exists');
+assert.match(syncSource,/Google 同步服務暫時不可用/,'initialisation failure remains visible to guest users');
+console.log('Firebase sync adapter tests passed.');
