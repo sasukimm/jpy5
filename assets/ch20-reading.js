@@ -1,8 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
   const data=window.JPY5_READING, stage=document.querySelector("#reading-stage");
-  const defaults=()=>({mode:"original",font:1,furigana:true,answered:{},wrong:[],vocabIndex:0,vocabFlipped:false,attempts:[],examAnswers:{}});
+  const defaults=()=>({mode:"original",font:1,furigana:true,answered:{},wrong:[],vocabIndex:0,vocabFlipped:false,attempts:[],examAnswers:{},sourceNotes:{},questionResults:{}});
   let state={...defaults(),...JPY5.read("reading",{})}, findIndex=0;
   state.examAnswers=state.examAnswers||{};
+  state.vocabIndex=((state.vocabIndex%data.vocab.length)+data.vocab.length)%data.vocab.length;
+  state.sourceNotes=state.sourceNotes||{};
+  state.questionResults=state.questionResults||{};
+  // Old questions mode showed the textbook: retain that destination for saved users.
+  if(state.mode==="questions")state.mode="source";
+  const setAnswer=(q,chosen)=>{state.answered[q.id]=chosen;state.questionResults[q.id]={selected:chosen,correct:chosen===q.answer};state.wrong=state.wrong.filter(id=>id!==q.id);if(chosen!==q.answer)state.wrong.push(q.id);};
+  // A selected answer is authoritative after a cloud merge; normalize stale wrong arrays.
+  data.questions.forEach(q=>{if(state.answered[q.id]!==undefined)setAnswer(q,state.answered[q.id]);});
   const esc=v=>String(v).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
   const save=()=>JPY5.write("reading",state);
   const kanjiRun=/[\u3400-\u9fff々〆ヶ]/;
@@ -28,17 +36,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     return out+esc(String(text).slice(last));
   }
-  function shell(title,subtitle,body){return `<div class="reading-stage-head"><div><p class="kicker">第 17 課</p><h2>${title}</h2>${subtitle?`<p>${subtitle}</p>`:""}</div></div>${body}`}
+  function shell(title,subtitle,body){return `<div class="reading-stage-head"><div><p class="kicker">第 20 課</p><h2>${title}</h2>${subtitle?`<p>${subtitle}</p>`:""}</div></div>${body}`}
   const questionText=q=>esc(q.q);
   const optionText=(q,option)=>esc(option);
   function original(){
-    return shell(ruby(data.title),"閱讀〈暦〉：從月份名稱、舊曆到明治改曆。",`<article class="reading-paper" style="--reading-size:${[.98,1.1,1.24][state.font]}rem"><div class="reading-badge">第17課</div>${data.paragraphs.map(p=>`<p data-paragraph="${p.id}">${ruby(p.jp)}</p>`).join("")}<footer>（${ruby(data.author)}）</footer></article>`);
+    return shell(ruby(data.title),`閱讀〈${ruby(data.title)}〉：${data.paragraphs.length} 段視覺核對原文。`,`<article class="reading-paper" style="--reading-size:${[.98,1.1,1.24][state.font]}rem"><div class="reading-badge">第20課</div>${data.paragraphs.map(p=>`<p data-paragraph="${p.id}">${ruby(p.jp)}</p>`).join("")}<footer>（${ruby(data.author)}）</footer></article>`);
   }
   function translation(){
-    return shell("繁體中文翻譯","段落編號與日文原文完全對應。",`<div class="translation-list">${data.paragraphs.map(p=>`<article><span>0${p.id}</span><p>${esc(p.zh)}</p></article>`).join("")}</div>`);
+    return shell("繁體中文翻譯","段落編號與日文原文完全對應；翻譯為編輯補充，非教材印刷中譯。",`<div class="translation-list">${data.paragraphs.map(p=>`<article><span>0${p.id}</span><p>${esc(p.zh)}</p></article>`).join("")}</div>`);
   }
   function questionCards(){
-    return shell("閱讀問題",`${data.questions.length} 題應用程式練習均依據已轉錄原文編寫；作答後即時顯示解釋及原文段落。`,`<div class="reading-question-list">${data.questions.map((q,i)=>{const chosen=state.answered[q.id],answered=chosen!==undefined;return `<article class="reading-question" data-question="${q.id}"><span>應用程式練習 · 問題 ${i+1} · 原文第 ${q.paragraph} 段</span><h3>${questionText(q)}</h3><div>${q.options.map((o,n)=>`<button data-q="${q.id}" data-option="${n}" ${answered?'disabled':''} class="${answered&&n===q.answer?'correct':answered&&n===chosen&&chosen!==q.answer?'wrong':''}">${optionText(q,o)}</button>`).join("")}</div><p class="reading-feedback">${answered?(chosen===q.answer?'答對。':'未正確。')+esc(q.why):''}</p></article>`}).join("")}</div>`);
+    return shell("應用程式閱讀練習",`${data.questions.length} 題應用程式練習均依據已轉錄原文編寫；作答後即時顯示解釋及原文段落。`,`<div class="reading-question-list">${data.questions.map((q,i)=>{const chosen=state.answered[q.id],answered=chosen!==undefined;return `<article class="reading-question" data-question="${q.id}"><span>應用程式閱讀練習 · 問題 ${i+1} · 原文第 ${q.paragraph} 段</span><h3>${questionText(q)}</h3><div>${q.options.map((o,n)=>`<button data-q="${q.id}" data-option="${n}" ${answered?'disabled':''} class="${answered&&n===q.answer?'correct':answered&&n===chosen&&chosen!==q.answer?'wrong':''}">${optionText(q,o)}</button>`).join("")}</div><p class="reading-feedback">${answered?(chosen===q.answer?'答對。':'未正確。')+esc(q.why):''}</p>${answered?`<button class="chip" data-retry-question="${q.id}">重新作答</button>`:""}</article>`}).join("")}</div>`);
   }
   function findAnswers(){
     const task=data.find[findIndex%data.find.length];
@@ -51,23 +59,25 @@ document.addEventListener("DOMContentLoaded", () => {
   function exam(){
     return shell("模擬考試",`${data.questions.length} 題一次完成，未提交答案會自動保存；提交後才顯示分數。`,`<div class="exam-list">${data.questions.map((q,i)=>`<article><span>${String(i+1).padStart(2,"0")}</span><h3>${questionText(q)}</h3><div>${q.options.map((o,n)=>`<label><input type="radio" name="${q.id}" value="${n}" ${state.examAnswers[q.id]===n?'checked':''}> ${optionText(q,o)}</label>`).join("")}</div></article>`).join("")}</div><div class="exam-submit"><p id="exam-status">已答 ${Object.keys(state.examAnswers).length} / ${data.questions.length}</p><button class="primary-button" id="submit-reading-exam">提交試卷 →</button></div><section class="reading-result" hidden></section>`);
   }
-  function mistakes(){
-    const qs=data.questions.filter(q=>state.wrong.includes(q.id));
-    const words=data.vocab.filter((_,i)=>state.wrong.includes(`v${i}`));
-    return shell("錯題重溫","閱讀題答錯或標記的單字會集中在這裡。",`${!qs.length&&!words.length?'<div class="empty-state"><h2>暫時冇錯題</h2><p>完成閱讀問題或模擬考試後，錯題會自動出現在這裡。</p></div>':`<div class="mistake-list">${qs.map(q=>`<article><span>閱讀理解</span><h3>${questionText(q)}</h3><p>答案：${optionText(q,q.options[q.answer])}</p><p>${esc(q.why)}</p><button class="chip" data-clear-wrong="${q.id}">標記已掌握</button></article>`).join("")}${words.map(([jp,zh])=>`<article><span>單字</span><h3>${ruby(jp)}</h3><p>${esc(zh)}</p></article>`).join("")}</div>`}`);
+  function sourceQuestions(){
+    const activities=data.sourceActivities||[];
+    const questions=data.sourceQuestions.map((q,i)=>`<article class="reading-question"><span>教材原題 · 不計分 · ${i+1}</span><h3 lang="ja">${ruby(q.q)}</h3>${q.items?'<ol>'+q.items.map(t=>'<li lang="ja">'+ruby(t)+'</li>').join('')+'</ol>':''}${q.options?'<ol type="a">'+q.options.map(t=>'<li lang="ja">'+ruby(t)+'</li>').join('')+'</ol>':''}<label>我的草稿（不計分）<textarea rows="3" data-source-note="${esc(q.id)}">${esc(state.sourceNotes[q.id]||'')}</textarea></label>${q.why?`<p>${esc(q.why)}</p>`:''}</article>`).join('');
+    const printed=activities.map(activity=>`<article class="reading-question"><span>${ruby(activity.section)} · 不計分</span><h3 lang="ja">${ruby(activity.instruction)}</h3>${activity.items?.length?'<ul>'+activity.items.map(item=>'<li lang="ja">'+ruby(item)+'</li>').join('')+'</ul>':''}<label>我的草稿（不計分）<textarea rows="3" data-source-note="${esc(activity.id)}">${esc(state.sourceNotes[activity.id]||'')}</textarea></label><p>教材未附答案鍵；本活動不計分。</p></article>`).join('');
+    return shell("教材原題 · 不計分",`${data.sourceQuestions.length} 題閱讀問題＋${activities.length} 項印刷活動；未核實答案鍵。草稿只代表你的筆記，不納入分數或掌握。`,'<div class="reading-question-list">'+questions+printed+'</div>');
   }
-  const renderers={original,translation,questions:questionCards,find:findAnswers,vocab,exam,mistakes};
+  function mistakes(){
+    const qs=data.questions.filter(q=>state.wrong.includes(q.id)),words=data.vocab.filter((_,i)=>state.wrong.includes('v'+i));
+    return shell("錯題重溫","重新作答可更新掌握；查看解釋本身不會當作答對。",qs.length||words.length?'<div class="mistake-list">'+qs.map(q=>`<article><span>應用程式閱讀練習 · 第 ${q.paragraph} 段</span><h3>${questionText(q)}</h3><button class="chip" data-review-question="${q.id}">重新作答</button><details><summary>查看答案與原文依據（不計掌握）</summary><p>${optionText(q,q.options[q.answer])}</p><p>${esc(q.why)}</p></details></article>`).join('')+words.map(([jp,zh])=>'<article><span>單字重溫</span><h3>'+ruby(jp)+'</h3><p>'+esc(zh)+'</p></article>').join('')+'</div>':'<div class="empty-state"><h2>暫時沒有錯題</h2><p>App閱讀練習、模擬考試錯題及標記的單字會出現在這裏。</p></div>');
+  }
+  const renderers={original,translation,source:sourceQuestions,practice:questionCards,find:findAnswers,vocab,exam,mistakes};
   function setMode(mode){state.mode=mode;state.vocabFlipped=false;findIndex=0;save();render()}
   function scoreQuestion(button){
-    const q=data.questions.find(x=>x.id===button.dataset.q), chosen=Number(button.dataset.option), card=button.closest(".reading-question"), ok=chosen===q.answer;
-    state.answered[q.id]=chosen;
-    if(!ok&&!state.wrong.includes(q.id))state.wrong.push(q.id);
-    if(ok)state.wrong=state.wrong.filter(x=>x!==q.id);
-    save(); card.querySelectorAll("button").forEach((b,n)=>{b.disabled=true;if(n===q.answer)b.classList.add("correct")});
-    if(!ok)button.classList.add("wrong");
-    card.querySelector(".reading-feedback").textContent=(ok?"答對。":"未正確。")+q.why;
+    const q=data.questions.find(x=>x.id===button.dataset.q);if(!q)return;
+    setAnswer(q,Number(button.dataset.option));save();render();
   }
   function bind(){
+    stage.querySelectorAll("[data-source-note]").forEach(input=>input.oninput=()=>{state.sourceNotes[input.dataset.sourceNote]=input.value;save()});
+    stage.querySelectorAll("[data-retry-question],[data-review-question]").forEach(b=>b.onclick=()=>{const id=b.dataset.retryQuestion||b.dataset.reviewQuestion;delete state.answered[id];delete state.questionResults[id];state.mode="practice";save();render();stage.querySelector(`[data-question="${id}"]`)?.scrollIntoView({block:"center"});});
     stage.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>scoreQuestion(b));
     stage.querySelectorAll("[data-find]").forEach(b=>b.onclick=()=>{const task=data.find[findIndex%data.find.length],ok=Number(b.dataset.find)===task.answer;stage.querySelectorAll("[data-find]").forEach(x=>x.disabled=true);b.classList.add(ok?"correct":"wrong");stage.querySelector(`[data-find="${task.answer}"]`).classList.add("correct");stage.querySelector(".find-feedback").textContent=ok?"搵啱了，呢段包含完整答案。":"答案在綠色段落；再對照問題讀一次。";stage.querySelector(".find-next").hidden=false;});
     stage.querySelector(".find-next")?.addEventListener("click",()=>{findIndex=(findIndex+1)%data.find.length;render()});
@@ -77,8 +87,8 @@ document.addEventListener("DOMContentLoaded", () => {
     stage.querySelectorAll("[data-vocab-jump]").forEach(b=>b.onclick=()=>{state.vocabIndex=Number(b.dataset.vocabJump);state.vocabFlipped=false;save();render()});
     stage.querySelector("[data-vocab-star]")?.addEventListener("click",()=>{const id=`v${state.vocabIndex}`;state.wrong=state.wrong.includes(id)?state.wrong.filter(x=>x!==id):[...state.wrong,id];save();render()});
     stage.querySelectorAll('.exam-list input').forEach(input=>input.onchange=()=>{state.examAnswers[input.name]=Number(input.value);save();stage.querySelector("#exam-status").textContent=`已答 ${Object.keys(state.examAnswers).length} / ${data.questions.length}`});
-    stage.querySelector("#submit-reading-exam")?.addEventListener("click",()=>{if(Object.keys(state.examAnswers).length<data.questions.length){stage.querySelector("#exam-status").textContent="請先完成全部題目。";return}let score=0;const results=data.questions.map(q=>{const ok=state.examAnswers[q.id]===q.answer;if(ok){score++;state.wrong=state.wrong.filter(x=>x!==q.id)}else if(!state.wrong.includes(q.id))state.wrong.push(q.id);return {id:q.id,ok}});state.attempts.push({date:new Date().toISOString(),score,total:data.questions.length,results});state.examAnswers={};save();stage.querySelector(".reading-result").hidden=false;stage.querySelector(".reading-result").innerHTML=`<strong>${score} / ${data.questions.length}</strong><h2>${score>=11?'掌握得很好！':score>=8?'再重溫幾個段落。':'先回原文找答案。'}</h2><p>錯題已自動加入「錯題重溫」。</p>`;stage.querySelector("#submit-reading-exam").disabled=true});
-    stage.querySelectorAll("[data-clear-wrong]").forEach(b=>b.onclick=()=>{state.wrong=state.wrong.filter(x=>x!==b.dataset.clearWrong);save();render()});
+    stage.querySelector("#submit-reading-exam")?.addEventListener("click",()=>{if(Object.keys(state.examAnswers).length<data.questions.length){stage.querySelector("#exam-status").textContent="請先完成全部題目。";return}let score=0;const results=data.questions.map(q=>{const ok=state.examAnswers[q.id]===q.answer;if(ok)score++;setAnswer(q,state.examAnswers[q.id]);return {id:q.id,ok}});state.attempts.push({date:new Date().toISOString(),score,total:data.questions.length,results});state.examAnswers={};save();const ratio=score/data.questions.length;stage.querySelector(".reading-result").hidden=false;stage.querySelector(".reading-result").innerHTML=`<strong>${score} / ${data.questions.length}</strong><h2>${ratio>=.8?'掌握得很好！':ratio>=.5?'再重溫幾個段落。':'先回原文找答案。'}</h2><p>錯題已自動加入「錯題重溫」。</p>`;stage.querySelector("#submit-reading-exam").disabled=true});
+
   }
   function render(){document.querySelectorAll("[data-reading-mode]").forEach(b=>b.classList.toggle("active",b.dataset.readingMode===state.mode));stage.innerHTML=(renderers[state.mode]||original)();bind()}
   document.querySelectorAll("[data-reading-mode]").forEach(b=>b.onclick=()=>setMode(b.dataset.readingMode));
@@ -89,5 +99,3 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown",e=>{if(e.target.matches("input,textarea,select"))return;if(state.mode==="vocab"&&e.code==="Space"){e.preventDefault();state.vocabFlipped=!state.vocabFlipped;save();render()}if(state.mode==="vocab"&&["ArrowLeft","ArrowRight"].includes(e.key)){state.vocabIndex=(state.vocabIndex+(e.key==="ArrowRight"?1:data.vocab.length-1))%data.vocab.length;state.vocabFlipped=false;save();render()}});
   render();
 });
-
-

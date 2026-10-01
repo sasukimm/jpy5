@@ -49,8 +49,8 @@ window.JPY5GrammarRuby = (() => {
     "Vた<ruby>形<rt>けい</rt></ruby>＋り＋しない"
   ],
   [
-    "今回失敗しても、絶対に諦めたりしない。",
-    "<ruby>今回<rt>こんかい</rt></ruby><ruby>失敗<rt>しっぱい</rt></ruby>しても、<ruby>絶対<rt>ぜったい</rt></ruby>に<ruby>諦<rt>あきら</rt></ruby>めたりしない。"
+    "今回失敗しても、絶対諦めたりしない。",
+    "<ruby>今回<rt>こんかい</rt></ruby><ruby>失敗<rt>しっぱい</rt></ruby>しても、<ruby>絶対<rt>ぜったい</rt></ruby><ruby>諦<rt>あきら</rt></ruby>めたりしない。"
   ],
   [
     "彼に何と言われても、泣いたりしない。",
@@ -61,8 +61,8 @@ window.JPY5GrammarRuby = (() => {
     "～ほど"
   ],
   [
-    "N ＋ ほど ｜ いA ＋ ほど ｜ なA ＋ な ＋ ほど ｜ V 普通形 ＋ ほど",
-    "N＋ほど｜いA＋ほど｜なA＋な＋ほど｜V<ruby>普通形<rt>ふつうけい</rt></ruby>＋ほど"
+    "N ＋ ほど ｜ いA ＋ ほど ｜ V 辭書形 ＋ ほど",
+    "N＋ほど｜いA＋ほど｜V<ruby>辭書形<rt>じしょけい</rt></ruby>＋ほど"
   ],
   [
     "今日は死ぬほど疲れた。",
@@ -141,8 +141,8 @@ window.JPY5GrammarRuby = (() => {
     "つまり、<ruby>引<rt>ひ</rt></ruby>き<ruby>受<rt>う</rt></ruby>けていただけないということですね。"
   ],
   [
-    "つまり、社員はその犠牲者だってことです。",
-    "つまり、<ruby>社員<rt>しゃいん</rt></ruby>はその<ruby>犠牲者<rt>ぎせいしゃ</rt></ruby>だってことです。"
+    "つまり、社員はその犠牲者だということです。",
+    "つまり、<ruby>社員<rt>しゃいん</rt></ruby>はその<ruby>犠牲者<rt>ぎせいしゃ</rt></ruby>だということです。"
   ],
   [
     "～よね",
@@ -161,8 +161,8 @@ window.JPY5GrammarRuby = (() => {
     "ぼく、さっきここに<ruby>置<rt>お</rt></ruby>いたよね。"
   ],
   [
-    "昨日の会議、出席しましたよね。",
-    "<ruby>昨日<rt>きのう</rt></ruby>の<ruby>会議<rt>かいぎ</rt></ruby>、<ruby>出席<rt>しゅっせき</rt></ruby>しましたよね。"
+    "昨日の会議、Ｂさんは出席しましたよね。",
+    "<ruby>昨日<rt>きのう</rt></ruby>の<ruby>会議<rt>かいぎ</rt></ruby>、Ｂさんは<ruby>出席<rt>しゅっせき</rt></ruby>しましたよね。"
   ],
   [
     "V辭書形＋たて",
@@ -1295,6 +1295,8 @@ window.JPY5GrammarRuby = (() => {
   const renderTitleInText = (value, title) => { const safeText=escape(value),safeTitle=escape(title); return safeTitle?safeText.replace(safeTitle,render(title)):safeText; };
   const renderPrompt = (value, title) => map.get(String(value ?? "")) || renderTitleInText(value, title);
   const rules = {
+    karanaru:[["からなっている","からなる"]], toshitewa:[["としては"]], niyori:[["ことによって","によって","により"]], kotokara:[["ことから","ところから"]], zaruwoenai:[["ざるを得ない","ざるをえない"]],
+    tehajimete:[["てはじめて","て初めて"]], ttara:[["ったら"]], nishitewa:[["にしては"]], karaniwa:[["からには"]], daroudesho:[["だろう","でしょ"]],
     tate:[["たて"]], tatoe:[["たとえ"]], tarishinai:[["たりしない"]], hodo:[["ほど"]], ndatte:[["んだって"]],
     nagara:[["でありながら","ながらも","ながら"]], tsumari:[["つまり"]], yone:[["よね"]], sai:[["際に","際は","の際"]],
     toitta:[["といった"]], niwatatte:[["にわたって","にわたり","にわたる"]], uchini:[["うちに"]],
