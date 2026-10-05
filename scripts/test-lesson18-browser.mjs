@@ -16,10 +16,26 @@ const go=async file=>{await page.goto(`${base}/${file}`);await page.waitForLoadS
 const state=key=>page.evaluate(key=>JSON.parse(localStorage.getItem('jpy5.chapter18.'+key)),key);
 const setState=(key,value)=>page.evaluate(({key,value})=>localStorage.setItem('jpy5.chapter18.'+key,JSON.stringify(value)),{key,value});
 const mode=m=>page.locator(`[data-reading-mode="${m}"]`).click();
+const visibleText=locator=>locator.evaluate(node=>{const copy=node.cloneNode(true);copy.querySelectorAll('rt').forEach(rt=>rt.remove());return copy.textContent});
 try{
-  await go('chapter-18-reading.html');
+  await go('chapter-18-reading.html');await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller));await page.waitForTimeout(750);await page.waitForLoadState('domcontentloaded');
   await page.evaluate(()=>localStorage.setItem('jpy5.chapter17.reading',JSON.stringify({sentinel:'unchanged'})));
-  await mode('source');await page.locator('[data-source-note="source-1"]').fill('教材原題の下書き');
+  await setState('reading',{mode:'source',sourceNotes:{'source-1':'舊教材草稿'},sourceResponses:{},textbookDrafts:{},answered:{},wrong:[],examAnswers:{},attempts:[],questionResults:{},vocabIndex:0,vocabFlipped:false,font:1,furigana:true});await page.reload();
+  assert.equal(await page.locator('[data-reading-mode="questions"]').evaluate(button=>button.classList.contains('active')),true,'old source mode did not migrate to Reading questions');
+  assert.deepEqual(await page.locator('.ch14-textbook-section>header h2').evaluateAll(nodes=>nodes.map(node=>{const copy=node.cloneNode(true);copy.querySelectorAll('rt').forEach(rt=>rt.remove());return copy.textContent.trim()})),['1. 考えてみよう','3. 確かめよう','4. 考えよう・話そう','5. チャレンジしよう']);
+  assert.equal(await page.locator('.ch14-official-answer:not([hidden])').count(),0);assert.equal(await page.locator('.ch14-model-answer:not([hidden])').count(),0);
+  assert.equal(await page.locator('[data-official-toggle]').first().innerText(),'課本官方答案 / 課本解答');
+  assert.equal(await page.locator('[data-source-note="source-1"]').inputValue(),'舊教材草稿');await page.locator('[data-source-note="source-1"]').fill('教材原題の下書き');
+  await page.locator('[data-source-class="source-4"][data-source-index="0"][data-source-value="A"]').click();
+  await page.locator('[data-source-choice="source-5"][value="0"]').check();
+  await page.locator('[data-textbook-draft="think-collecting"]').fill('切手を集めています。');await page.locator('[data-textbook-draft="challenge-scenario"]').fill('僕：これ？');
+  await page.locator('[data-official-toggle="source-1"]').click();assert.match(await visibleText(page.locator('[data-official-answer="source-1"]')),/古い鉛筆削りと新しい鉛筆削り/);assert.equal(await page.locator('[data-source-note="source-1"]').inputValue(),'教材原題の下書き');
+  await page.locator('[data-official-toggle="source-4"]').click();assert.match(await visibleText(page.locator('[data-official-answer="source-4"]')),/① A.*② A.*③ B.*④ B.*⑤ B.*⑥ A.*⑦ B.*⑧ B/s);
+  await page.locator('[data-official-toggle="source-5"]').click();assert.match(await visibleText(page.locator('[data-official-answer="source-5"]')),/b\. 彼にとっては価値を感じるものだったから/);assert(await page.locator('[data-source-choice="source-5"][value="0"]').isChecked(),'reveal overwrote learner selection');
+  await page.locator('[data-model-toggle="think-collecting"]').click();assert.match(await page.locator('[data-model-answer="think-collecting"]').innerText(),/參考回答例（非課本官方答案）/);
+  await page.locator('#furigana-toggle').click();assert.equal(await page.locator('[data-textbook-draft="think-collecting"]').inputValue(),'切手を集めています。');assert(await page.locator('[data-source-class="source-4"][data-source-index="0"][data-source-value="A"]').evaluate(button=>button.classList.contains('selected')));assert(await page.locator('[data-source-choice="source-5"][value="0"]').isChecked());
+  await mode('practice');await mode('questions');assert.equal(await page.locator('[data-textbook-draft="challenge-scenario"]').inputValue(),'僕：これ？');await page.reload();assert.equal(await page.locator('[data-source-note="source-1"]').inputValue(),'教材原題の下書き');assert.equal(await page.locator('[data-textbook-draft="think-collecting"]').inputValue(),'切手を集めています。');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Reading questions overflow 1280px');
   assert.equal(Object.keys((await state('reading')).answered).length,0);
   await mode('exam');
   const qs=await page.evaluate(()=>window.JPY5_READING.questions);
@@ -39,13 +55,25 @@ try{
   await mode('original');await mode('exam');for(const q of qs)await page.locator(`input[name="${q.id}"][value="${q.answer}"]`).check();await page.locator('#submit-reading-exam').click();assert(!(await state('reading')).wrong.includes(qs[0].id));
   await mode('find');const finds=await page.evaluate(()=>window.JPY5_READING.find);for(const task of finds){await page.locator(`[data-find="${task.answer}"]`).click();assert.match(await page.locator('.find-feedback').innerText(),/搵啱/);await page.locator('.find-next').click();}
   await mode('vocab');await page.locator('[data-vocab-star]').click();await page.reload();assert((await state('reading')).wrong.includes('v0'));
-  await go('chapter-18-textbook.html');assert.equal(await page.locator('.dialogue-row').count(),20);assert.equal(await page.locator('.unverified-blank').count(),13);
-  await page.locator('[data-mode="blanks"]').click();assert.equal(await page.locator('[data-blank-draft]').count(),13);await page.locator('[data-blank-draft="13"]').fill('私の未確認メモ');
-  await page.locator('[data-mode="prompts"]').click();assert.equal(await page.locator('[data-prompt-note]').count(),5);await page.locator('[data-prompt-note="listen-1"]').fill('聞いた証拠のメモ');
-  await page.locator('[data-mode="expressions"]').click();assert.equal(await page.locator('[data-expression-note]').count(),5);await page.locator('[data-expression-note="0-0"]').fill('語気のメモ');
-  await page.locator('[data-mode="activities"]').click();assert.equal(await page.locator('[data-activity-note]').count(),4);await page.locator('[data-activity-note="practice"]').fill('会話の練習メモ');await page.reload();
-  const listening=await state('conversation');assert.equal(listening.drafts['13'],'私の未確認メモ');assert.equal(listening.promptNotes['listen-1'],'聞いた証拠のメモ');assert.equal(listening.expressionNotes['0-0'],'語気のメモ');assert.equal(listening.activityNotes.practice,'会話の練習メモ');
-  assert.equal(await page.locator('[data-answer],.correct,.wrong,[data-mark]').count(),0);
+  await setState('conversation',{mode:'prompts',furigana:true,drafts:{1:'舊空欄草稿'},promptNotes:{'listen-2':'舊內容筆記'},expressionNotes:{'0-1':'舊表現筆記'},activityNotes:{repeat:'舊版もう一度聞こう筆記',say:'舊版言ってみよう筆記',practice:'舊版練習しよう筆記',challenge:'舊版チャレンジ筆記','activity-1-2':'舊活動草稿'},listenCount:7});
+  await go('chapter-18-textbook.html');assert.equal(await page.locator('[data-mode="comprehension"]').evaluate(button=>button.classList.contains('active')),true,'legacy prompts mode did not migrate');
+  assert.equal(await page.locator('[data-prompt-note]').count(),5);assert.equal(await page.locator('[data-expression-note]').count(),5);assert.equal(await page.locator('.reference-answer:not([hidden])').count(),0);
+  assert.equal(await page.locator('[data-prompt-note="listen-2"]').inputValue(),'舊內容筆記');assert.equal(await page.locator('[data-expression-note="0-1"]').inputValue(),'舊表現筆記');
+  await page.locator('[data-prompt-note="listen-1"]').fill('聞いた証拠のメモ');await page.locator('[data-expression-note="0-0"]').fill('語気のメモ');await page.locator('[data-answer-toggle="listen-1"]').click();
+  assert.match(await visibleText(page.locator('[data-answer-panel="listen-1"]')),/ワットさん.*食器が多すぎること/s);assert.equal(await page.locator('[data-prompt-note="listen-1"]').inputValue(),'聞いた証拠のメモ','answer reveal overwrote learner note');
+  await page.locator('[data-mode="dialogue"]').click();assert.equal(await page.locator('.dialogue-row').count(),20);assert.equal(await page.locator('.verified-answer').count(),13);assert.equal(await page.locator('.dialogue-row-actions [data-listen-target]').count(),13);assert.equal(await page.locator('.dialogue-row p [data-listen-target]').count(),0,'replay button is inline in dialogue text');
+  assert.equal(await page.locator('[data-answer-span="3"]').locator('xpath=ancestor::article[1]').locator('.dialogue-row-actions [data-listen-target]').count(),2);assert.equal(await page.locator('[data-answer-span="5"]').locator('xpath=ancestor::article[1]').locator('.dialogue-row-actions [data-listen-target]').count(),2);assert.equal(await page.locator('[data-answer-span="7"]').locator('xpath=ancestor::article[1]').locator('.dialogue-row-actions [data-listen-target]').count(),3);
+  const targets=await page.evaluate(()=>window.JPY5_CONVERSATION.listeningTargets.map(({id,answer,start,end})=>({id,answer,start,end})));
+  for(const target of targets)assert.equal((await visibleText(page.locator(`[data-answer-span="${target.id}"]`))).trim(),target.answer);
+  await page.evaluate(()=>{const audio=document.querySelector('#lesson-audio');audio.dataset.pauses='0';audio.play=()=>Promise.resolve();audio.pause=()=>{audio.dataset.pauses=String(Number(audio.dataset.pauses)+1)}});
+  await page.locator('[data-listen-target="1"]').first().click();assert(Math.abs((await page.locator('#lesson-audio').evaluate(audio=>audio.currentTime))-targets[0].start)<.03);
+  await page.locator('[data-listen-target="2"]').first().click();await page.locator('#lesson-audio').evaluate((audio,time)=>{audio.currentTime=time;audio.dispatchEvent(new Event('timeupdate'))},targets[0].end);assert.equal(await page.locator('#lesson-audio').getAttribute('data-pauses'),'0','stale first replay stopped second target');
+  await page.locator('#lesson-audio').evaluate((audio,time)=>{audio.currentTime=time+.1;audio.dispatchEvent(new Event('timeupdate'))},targets[1].end);assert.equal(await page.locator('#lesson-audio').getAttribute('data-pauses'),'1');
+  await page.locator('[data-mode="blanks"]').click();assert.equal(await page.locator('[data-blank-draft]').count(),13);assert.equal(await page.locator('[data-blank-draft="1"]').inputValue(),'舊空欄草稿');assert.equal(await page.locator('[data-legacy-activity-note="repeat"]').inputValue(),'舊版もう一度聞こう筆記');await page.locator('[data-blank-draft="13"]').fill('私の答案');await page.locator('[data-answer-toggle="blank-13"]').click();assert.equal(await page.locator('[data-blank-draft="13"]').inputValue(),'私の答案');
+  await page.locator('[data-mode="activities"]').click();assert.deepEqual(await page.locator('.textbook-activity-card>header h2').allTextContents(),['1. やってみよう','4. 言ってみよう','5. 練習しよう','6. チャレンジしよう']);assert.equal(await page.locator('[data-activity-note]').count(),12);assert.equal(await page.locator('[data-legacy-activity-note="say"]').inputValue(),'舊版言ってみよう筆記');assert.equal(await page.locator('[data-legacy-activity-note="practice"]').inputValue(),'舊版練習しよう筆記');assert.equal(await page.locator('[data-activity-note="activity-6"]').inputValue(),'舊版チャレンジ筆記');assert.equal(await page.locator('[data-activity-note="activity-1-2"]').inputValue(),'舊活動草稿');await page.locator('[data-activity-note="practice-1"]').fill('会話の練習メモ');assert.equal(await page.locator('.reference-answer:not([hidden])').count(),0);
+  await page.locator('#furigana-toggle').click();assert.equal(await page.locator('[data-activity-note="practice-1"]').inputValue(),'会話の練習メモ');await page.reload();
+  let listening=await state('conversation');assert.equal(listening.drafts['13'],'私の答案');assert.equal(listening.promptNotes['listen-1'],'聞いた証拠のメモ');assert.equal(listening.expressionNotes['0-0'],'語気のメモ');assert.equal(listening.activityNotes['practice-1'],'会話の練習メモ');assert.deepEqual([listening.activityNotes.repeat,listening.activityNotes.say,listening.activityNotes.practice,listening.activityNotes.challenge],['舊版もう一度聞こう筆記','舊版言ってみよう筆記','舊版練習しよう筆記','舊版チャレンジ筆記']);assert.equal(listening.activityNotes['activity-6'],'舊版チャレンジ筆記');assert.equal(listening.listenCount,7);
+  await page.locator('[data-activity-note="activity-6"]').fill('新版チャレンジ筆記');await page.reload();assert.equal(await page.locator('[data-activity-note="activity-6"]').inputValue(),'新版チャレンジ筆記','legacy challenge overwrote a newer note');listening=await state('conversation');assert.equal(listening.activityNotes.challenge,'舊版チャレンジ筆記');assert.equal(listening.activityNotes['activity-6'],'新版チャレンジ筆記');
   page.once('dialog',d=>d.accept());await page.locator('#reset-conversation').click();assert.equal(await state('conversation'),null);assert.equal((await state('reading')).attempts.length,3);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('jpy5.chapter17.reading')).sentinel),'unchanged');
   await go('chapter-18-quiz.html');const gqs=await page.evaluate(()=>window.JPY5_DATA.questions);
@@ -60,7 +88,7 @@ try{
   await setState('quiz.history',[]);await page.reload();assert.equal(await page.locator('.empty-state a').getAttribute('href'),'chapter-18-quiz.html');
   await go('chapter-18-vocabulary.html');assert.match(await page.locator('#vocab-count').innerText(),/108/);await page.locator('#vocab-card').click();await page.locator('#vocab-right').click();assert.equal(Object.values((await state('vocabulary.cards.v2')).results).filter(v=>v==='right').length,1);
   await go('chapter-18-flashcards.html');await page.locator('#flashcard').click();await page.locator('#mark-wrong').click();assert.equal(Object.values((await state('flashcards')).results).filter(v=>v==='wrong').length,1);
-  await go('chapter-18.html');assert.equal(await page.locator('[data-count="quiz"]').innerText(),'32');assert.equal(await page.locator('[data-count="reading"]').innerText(),'13');assert.match(await page.locator('[data-progress="reading"]').innerText(),/13\/13 App題答對/);
+  await go('chapter-18.html');assert.equal(await page.locator('[data-count="quiz"]').innerText(),'32');assert.equal(await page.locator('[data-count="reading"]').innerText(),'13');await page.locator('[data-progress="reading"]').filter({hasText:/13\/13 App題答對/}).waitFor();
   // Smoke every page at phone and iPad sizes, and inspect the densest modes.
   for(const viewport of [{width:390,height:844},{width:810,height:1080}]){
     await page.setViewportSize(viewport);
@@ -69,7 +97,7 @@ try{
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,`${module} overflows ${viewport.width}px`);
       if(['','notes','vocabulary'].includes(module))await page.screenshot({path:`${artifacts}/${module||'hub'}-${viewport.width}.png`});
       if(module==='notes'){assert.equal(await page.locator('.grammar-card').count(),8);await page.locator('[data-extra-id="monoda"]').click();assert(await page.locator('dialog[open]').isVisible());await page.locator('[data-extra-close]').first().click();}
-      if(module==='reading'){await mode('source');await page.screenshot({path:`${artifacts}/reading-source-${viewport.width}.png`,fullPage:true});await mode('practice');await page.screenshot({path:`${artifacts}/reading-practice-${viewport.width}.png`,fullPage:true});await mode('exam');}
+      if(module==='reading'){await mode('questions');await page.screenshot({path:`${artifacts}/reading-textbook-${viewport.width}.png`,fullPage:true});await mode('practice');await page.screenshot({path:`${artifacts}/reading-practice-${viewport.width}.png`,fullPage:true});await mode('exam');}
       if(module==='textbook'){await page.locator('[data-mode="blanks"]').click();await page.screenshot({path:`${artifacts}/listening-${viewport.width}.png`,fullPage:true});}
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,`${module} mode overflows ${viewport.width}px`);
     }
@@ -88,5 +116,5 @@ try{
   assert(audit.ok&&audit.text.includes('Lesson 18 source audit'),'source audit is unavailable offline');
   await context.setOffline(false);
   assert.deepEqual(errors,[],'browser JS errors');
-  console.log('Lesson 18 browser checks passed: exam drafts, mastery transitions, unscored notes/reset, history compatibility, review preservation, nine pages at phone/iPad sizes and offline.');
+  console.log('Lesson 18 browser checks passed: textbook 1/3/4/5, hidden official answers, safe reveals, source migration, saved drafts/selections, App exam/mastery preservation, responsive layouts and offline.');
 }finally{await browser.close();await new Promise(r=>server.close(r));}
