@@ -4,7 +4,7 @@ Status: school vocabulary and grammar PDFs verified directly on 2026-09-19.
 Implementation inventory updated on 2026-10-01 before the quality upgrade.
 Lesson 18 learning datasets and all nine module pages already exist. School-PDF
 verification, visual textbook transcription, app-authored teaching, and
-unverified audio-dependent answers are distinct evidence levels.
+audio-verified listening targets are distinct evidence levels.
 
 ## Authoritative sources
 
@@ -14,6 +14,9 @@ unverified audio-dependent answers are distinct evidence levels.
 - School grammar PDF: Google Drive file ID `1gQdp-sbNHMYeVd6x-WMmXh1i-dr2hpRI`
   (`g_2_18.pdf`), four pages; directly inspected at the supplied local path.
 - Textbook: [大家的日語 中級II 第18課](https://ttrw.jp/static/textbook//1032/%E5%A4%A7%E5%AE%B6%E7%9A%84%E6%97%A5%E8%AF%AD%E4%B8%AD%E7%BA%A72%E7%AC%AC18%E8%AF%BE.pdf), HTTP 200, 24 PDF pages.
+- Official answer book: `L17 to L20 ans.pdf`; Lesson 18 reading answers were
+  visually verified on PDF page 5. Listening answers and examples were visually
+  verified across PDF pages 5–7 and cross-checked with the textbook and audio.
 
 ## Verified vocabulary inventory
 
@@ -58,15 +61,15 @@ not turn that observation into an absolute restriction.
   `村上春樹『村上朝日堂超短編小説 夜のくもざる』新潮社より`.
   The existing dataset contains eight visually verified Japanese paragraphs,
   an app-authored Traditional Chinese translation, and visually transcribed
-  textbook questions. The printed answer key has not been verified; those
-  questions remain unscored and are not an official answer key.
+  textbook activities 1 / 3 / 4 / 5. The six `3. 確かめよう` records retain
+  IDs `source-1` through `source-6`; their official answers were visually
+  transcribed from answer-book PDF page 5 and remain unscored.
 - Conversation: `あなたこそ、あの本の山はいったい何なの！`.
-  The existing visually transcribed dataset contains 20 dialogue lines,
-  13 printed numbered blanks, five content prompts, one expression group, and
-  follow-up activities 3–6. All blank answers and audio-dependent prompt answers
-  remain unverified (`audio_confirmation_required`). No answers, automatic
-  scoring, mastery, or sentence timestamps are authorized by this evidence.
-- The inspected textbook has no machine-readable evidence of sentence timestamps.
+  The visually transcribed dataset contains 20 dialogue lines, 13 printed
+  numbered blanks, five content prompts, five expression situations, and all
+  activities 1 / 3 / 4 / 5 / 6. Fixed answers and answer examples were checked
+  against the official answer book PDF pp. 5–7. The 13 blank expressions and
+  individual replay ranges were independently checked against official MP3 1–18.
 
 ## Verified audio references
 
@@ -88,12 +91,12 @@ blanks are unscored. Progress uses the existing `jpy5.chapter18.*` namespace and
 shared Firebase sync. This upgrade reuses that architecture and preserves source
 records and existing user progress.
 
-## Quality upgrade disposition — 2026-10-01
+## Quality upgrade disposition — 2026-10-05
 
 Local source copies under `work/lesson18-source/` were re-inspected: all six
 school vocabulary pages, all four school grammar pages, textbook PDF pages 2–3
-(reading / questions), and 5–8 (listening / follow-ups). These are source reads;
-no audio answer key was obtained or verified in this upgrade.
+(reading / questions), and 5–8 (listening / follow-ups). The later listening
+pass also inspected answer-book pages 5–7 and independently audited MP3 1–18.
 
 ### Vocabulary
 
@@ -155,9 +158,17 @@ flashcards, quizzes and history without modifying shared grammar code.
 - All eight existing verified Japanese paragraphs, their IDs and the source
   credit are unchanged. A regression check compares them with commit
   `e25641e91446486a6e7cadaea60a970aaad0c2f0`.
-- The six source question groups are **教材原題 · 不計分**, always
-  `scored:false` / `answer:null`. The official answer key remains unverified.
-  Their learner drafts are saved separately and never contribute to mastery.
+- The textbook activity surface follows the printed order **1. 考えてみよう →
+  3. 確かめよう → 4. 考えよう・話そう → 5. チャレンジしよう**. Activity
+  wording was visually transcribed from textbook PDF pages 1, 3 and 4. The
+  page-4 categories are exactly `① 物`, `② 人`, `③ 行為、行動`; the scenario
+  instruction prints `動き`, not `動作`.
+- The six `3. 確かめよう` records preserve IDs `source-1` through `source-6`,
+  stay `scored:false`, and now carry official answers transcribed from the
+  answer book PDF page 5. The classification is `A, A, B, B, B, A, B, B` and
+  the two printed choices are `① b` and `② c`. Answers are hidden by default;
+  reveal does not replace learner notes or selections and never contributes to
+  App mastery or wrong-answer scoring.
 - Re-reading printed p.73 corrected earlier question transcription errors:
   `何と何を`, `どんな関係`, `こんな幸運は`, classification `コレクター`, the
   quote `その鉛筆削りいいですねえ`, the full “20年以上…古いもの” option, and
@@ -165,33 +176,43 @@ flashcards, quizzes and history without modifying shared grammar code.
 - **13 應用程式閱讀練習**, **5 原文找答案** tasks and **24** contextual vocabulary
   cards are a separate app-authored layer. Scored questions cite a valid paragraph
   and have a text-supported answer and explanation. They are not a textbook key.
-- Original, translation, source questions, App practice, find-answer, vocabulary,
-  exam and wrong-answer review are separate modes. Chinese translation is editorial
-  teaching material, not a printed textbook translation.
+- Original, translation, textbook Reading questions, App practice, find-answer,
+  vocabulary, exam and wrong-answer review are separate modes. Chinese translation
+  is editorial teaching material, not a printed textbook translation. Suggested
+  answers for open activities 1 / 4 / 5 are app-authored and labelled
+  `參考回答例（非課本官方答案）`.
 - Exam selections save immediately and survive mode, font, furigana and page
   navigation. Exam submission updates the same current-answer/mastery record as
   practice. Wrong answers stay reviewable until a correct retry; viewing an answer
   or explanation never awards mastery. Existing ten vocabulary indices are preserved.
 
-### Listening and source speaking activities
+### Listening and source speaking activities — completed 2026-10-05
 
-- All 20 existing dialogue lines are unchanged; regression checks protect them
-  against the same reference commit. All 13 blanks remain
-  `audio_confirmation_required`. **No blank answers were invented**, including in
-  hidden JS, answer buttons or accessibility content. `items` and `comprehension`
-  remain empty. No automatic scoring, mastery or sentence timestamps exist.
-- Five source content prompts and one expression group (five situations) remain
-  unverified and unscored. The full official Track 1–18 is available, but an
-  accessible/decodable audio file is not answer verification.
-- Full dialogue, 13 blanks, five content prompts, expression notes, source follow-up
-  activities and a listening guide all have useful unscored study surfaces.
-  Learner drafts/notes are escaped, persisted and clearly distinguished from answers.
-- Activities `3. もう一度聞こう`, `4. 言ってみよう`, `5. 練習しよう` and
-  `6. チャレンジしよう` are retained. Follow-up task descriptions are explicitly
-  labelled instruction summaries; the original PDF remains the reference for
-  images and full practice dialogues. Printed p.77 establishes 場面2 as
-  reconciliation/apology, not the subsequent numbered dating/mobile-phone task;
-  the incorrect earlier summary was corrected. Open-ended tasks remain not scored.
+- All 20 dialogue rows were rechecked against textbook pp.75–76 and official
+  MP3 1–18. All 13 numbered blanks retain their printed number, speaker and
+  context. Exact answer spans are highlighted in the full dialogue, while each
+  replay button is a separate row-level control.
+- Official answer-book text and fresh MP3 ranges are stored in `listeningTargets`.
+  Each range was exported and speech-checked independently; the three multi-answer
+  rows expose 2, 2 and 3 separate controls. Replay uses a serial guard and removes
+  the previous stop listener before a new target begins.
+- `2. 聞いてみよう` retains all five content prompts and five expression
+  situations in print order. Official answers are hidden initially. Reveal never
+  fills or overwrites learner notes.
+- `3. もう一度聞こう` is a 13-item editable cloze. Comparison ignores harmless
+  whitespace and punctuation only; revealing an answer is independent of checking.
+- All textbook activities `1. やってみよう`, `4. 言ってみよう`,
+  `5. 練習しよう`, and `6. チャレンジしよう` are present. The four picture
+  prompts link to the original textbook rather than inventing image descriptions.
+  Official practice dialogues are labelled `課本解答例`; activity 6 is marked as
+  open work because the answer book says `省略`.
+- Existing `drafts`, `promptNotes`, `expressionNotes`, `activityNotes`,
+  `listenCount`, furigana and mode state are preserved. Legacy prompt/expression
+  modes migrate to the grouped comprehension mode; `activityDrafts` also migrates
+  into the current activity-note map. The pre-completion activity keys `repeat`,
+  `say`, and `practice` remain editable as clearly labelled section notes;
+  `challenge` is copied to `activity-6` only when that newer field has no value.
+  Original keys remain intact, newer notes win, and repeated loads are idempotent.
 - Reset clears only `jpy5.chapter18.conversation`; it does not reset another lesson
   or Reading/Vocabulary. Playback count and saved-note count are not completion.
 
@@ -208,16 +229,15 @@ All eight module switchers include 13 → 14 → 15 → 16 → 17 → 18. No cli
 Lesson 19/20 links were added; the semester homepage is untouched. Hub counts
 derive from runtime datasets; its progress excludes unscored source/listening work.
 
-Validation covers counts, unique/order IDs, fields, balanced grammar coverage,
-correct answer indices, protected source text, paragraph references, no listening
-answers/scoring, preserved histories, unfinished exams, correct/wrong transitions,
-note/reset isolation, phone/iPad layout, nine-page offline loading, asset links,
-JavaScript syntax, and the regenerated offline manifest including this audit.
-Shared Lesson 17, Firebase, theme and PWA regression scripts are also run.
-`scripts/test-pwa.mjs` now recognizes Lesson 18's intentionally unscored listening
-controller; no shared production controller, styles or Firebase code was changed.
+Validation covers counts, unique/order IDs, fields, protected source text, exact
+listening answer spans and ranges, stale replay cancellation, hidden-answer safety,
+preserved histories and drafts, phone/iPad layout, nine-page offline loading,
+asset links, JavaScript syntax, and the regenerated offline manifest. Shared
+Lesson 13–17 listening, Lessons 19–20, Firebase, theme and PWA regressions are
+also run. The shared stylesheet only adds the reusable row-action layout and
+activity introduction treatment required by this Lesson 18 interface.
 
-Intentionally unresolved: official reading-question answer key, listening blank and
-prompt answers, expression answer key, verified sentence timestamps, and full
-visual illustrations/dialogues inside the follow-up practice PDF. App practice
-does not assert that any of these are verified.
+Intentionally unresolved for this listening module: the four textbook illustrations
+are not duplicated in the app; learners open the source PDF for that visual context.
+Open speaking work remains unscored. This listening upgrade does not alter the
+separately completed Lesson 18 Reading implementation.
