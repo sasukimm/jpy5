@@ -1,7 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   const data = window.JPY5_CONVERSATION;
+  const teacher = window.JPY5_TEACHER;
   const stage = document.querySelector("#conversation-stage");
   const audio = document.querySelector("#lesson-audio");
+  const segmentPlayer = JPY5SegmentPlayer.attach(audio);
   const fresh = () => ({mode:"dialogue", card:0, flipped:false, furigana:true, attempts:0, marks:{}, mistakes:{}, stars:{}, comprehensionAnswers:{}, comprehensionMistakes:{}, textbookDrafts:{}, shadowIndex:0, shadowing:false, shadowHide:false});
   let state = {...fresh(), ...JPY5.read("conversation", {})};
   let current = 0;
@@ -58,11 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     save();
   }
   function play(id) {
-    const x = item(id); if (!x) return;
-    audio.currentTime = x.start;
-    audio.play().catch(() => {});
-    const stop = () => { if (audio.currentTime >= x.end) { audio.pause(); audio.removeEventListener("timeupdate", stop); } };
-    audio.addEventListener("timeupdate", stop);
+    segmentPlayer.play(item(id));
   }
   function setMode(mode) {
     state.mode = mode; state.flipped = false; current = 0; built = []; orderPool = []; save();
@@ -95,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
     stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">完整會話</p><h2>${ruby(data.title)}</h2></div><div class="heading-actions"><button class="chip" data-shadow-start type="button">🎧 シャドーイング</button><button class="chip" id="toggle-focus" type="button">隱藏底線句</button></div></div>${shadowPanel}<div class="dialogue-list">${data.dialogue.map(row => {
       const [speaker,before,id,after] = row;
       const focus = id ? `<button class="focus-line" data-focus-line="${id}" data-answer-text="${esc(item(id).jp)}" type="button" aria-haspopup="dialog" aria-label="查看底線句解釋：${esc(item(id).jp)}">${ruby(item(id).jp)}</button>` : "";
-      return `<article class="dialogue-row"><b>${ruby(speaker)}</b><p>${ruby(before)}${focus}${ruby(after || "")}</p>${id ? listenButton(id,"播放這句") : ""}</article>`;
+      return `<article class="dialogue-row"><b>${ruby(speaker)}</b><p>${ruby(before)}${focus}${ruby(after || "")}</p>${id ? listenButton(id,"播放這句") : ""}${teacher ? teacher.conversation.filter(note=>dialogueText(row).includes(note.match)).map(note=>teacher.block(note,state.furigana)).join("") : ""}</article>`;
     }).join("")}</div>`;
     let hidden = false;
     stage.querySelector("#toggle-focus").onclick = e => {
@@ -108,7 +106,10 @@ document.addEventListener("DOMContentLoaded", () => {
     stage.querySelector("[data-shadow-close]")?.addEventListener("click",()=>{state.shadowing=false;save();render();});
     stage.querySelectorAll("[data-shadow-nav]").forEach(button=>button.onclick=()=>{state.shadowIndex=(state.shadowIndex+(button.dataset.shadowNav==="next"?1:data.dialogue.length-1))%data.dialogue.length;save();render();});
     stage.querySelector("[data-shadow-hide]")?.addEventListener("click",()=>{state.shadowHide=!state.shadowHide;save();render();});
-    stage.querySelector("[data-shadow-full]")?.addEventListener("click",()=>{audio.currentTime=0;audio.play().catch(()=>{});});
+    stage.querySelector("[data-shadow-full]")?.addEventListener("click",()=>{segmentPlayer.full();});
+  }
+  function renderTranslation() {
+    stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">全文中文翻譯</p><h2>${esc(data.title)}</h2></div><span>${data.translation.length} 句雙語對照</span></div><div class="dialogue-list translation-list">${data.translation.map(([speaker,text],index) => `<article class="dialogue-row"><b>${esc(speaker)}</b><p lang="zh-Hant">${esc(text)}<span class="translation-original" lang="ja">${ruby(dialogueText(data.dialogue[index]))}</span></p></article>`).join("")}</div>`;
   }
   function renderFocus() {
     stage.innerHTML = `<div class="stage-heading"><div><p class="kicker">重點句子</p><h2>五句底線表現</h2></div><span>星號會加入重溫</span></div><div class="focus-grid">${data.items.map(x => `<article class="focus-card"><div class="focus-number">0${x.id}</div><button class="star-button ${state.stars[x.id]?'active':''}" data-star="${x.id}" aria-label="收藏句子">${state.stars[x.id]?'★':'☆'}</button><h3>${ruby(x.jp)}</h3><p class="focus-meaning">${esc(x.zh)}</p><p>${esc(x.use)}</p>${listenButton(x.id)}</article>`).join("")}</div>`;
@@ -145,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function activityTask(task) {
-    return `<article class="textbook-task-card"><p class="textbook-prompt" lang="ja">${ruby(task.prompt).replace(/\n/g,"<br>")}</p><label>你的準備／回答<textarea rows="5" data-draft="${task.id}" lang="ja" placeholder="ここに入力してください">${esc(state.textbookDrafts[task.id]||"")}</textarea></label><button class="secondary-button" type="button" data-reveal="${task.id}">參考回答例を見る</button><div class="reference-answer" data-answer-panel="${task.id}" hidden><b>${esc(task.modelLabel)}</b><p lang="ja">${ruby(task.model).replace(/\n/g,"<br>")}</p></div></article>`;
+    return `<article class="textbook-task-card"><p class="textbook-prompt" lang="ja">${ruby(task.prompt).replace(/\n/g,"<br>")}</p>${teacher?.block(teacher.practice[task.id],state.furigana)||""}<label>你的準備／回答<textarea rows="5" data-draft="${task.id}" lang="ja" placeholder="ここに入力してください">${esc(state.textbookDrafts[task.id]||"")}</textarea></label><button class="secondary-button" type="button" data-reveal="${task.id}">參考回答例を見る</button><div class="reference-answer" data-answer-panel="${task.id}" hidden><b>${esc(task.modelLabel)}</b><p lang="ja">${ruby(task.model).replace(/\n/g,"<br>")}</p></div></article>`;
   }
   function renderActivities() {
     stage.innerHTML=`<div class="stage-heading"><div><p class="kicker">課本活動</p><h2>話して、考えて、練習しよう</h2></div><span>不自動評分 · 草稿自動保存</span></div><div class="textbook-activity-list">${data.textbook.activities.map(section=>`<section class="textbook-activity-card"><header><span>${esc(section.label)}</span><h2>${ruby(section.title)}</h2></header>${section.groups?section.groups.map(group=>`<div class="activity-group"><h3>${ruby(group.title)}</h3><p lang="ja">${ruby(group.instruction)}</p><div class="textbook-example"><b>課本例</b><p lang="ja">${ruby(group.example).replace(/\n/g,"<br>")}</p></div>${group.tasks.map(activityTask).join("")}</div>`).join(""):section.tasks.map(activityTask).join("")}</section>`).join("")}</div>`;
@@ -170,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const blank = id ? `<label class="cloze-blank"><span>底線 ${id}</span><input data-cloze="${id}" lang="ja" autocomplete="off" placeholder="輸入聽到的句子"></label>` : "";
       return `<article class="dialogue-row"><b>${ruby(speaker)}</b><p>${ruby(before)}${blank}${ruby(after || "")}</p></article>`;
     }).join("")}</div><div class="practice-actions"><button class="text-button" id="reveal-cloze">顯示答案</button><button class="primary-button" id="check-cloze">檢查五句</button></div><p class="answer-message"></p></article>`;
-    stage.querySelector("#play-full").onclick = () => { audio.currentTime=0; audio.play().catch(()=>{}); };
+    stage.querySelector("#play-full").onclick = () => { segmentPlayer.full(); };
     stage.querySelector("#reveal-cloze").onclick = () => { revealed=true; data.items.forEach(x => { const input=stage.querySelector(`[data-cloze="${x.id}"]`); input.value=x.jp; input.insertAdjacentHTML("afterend",`<output class="cloze-ruby-answer" lang="ja">${ruby(x.jp)}</output>`); }); stage.querySelector("#check-cloze").disabled=true; stage.querySelector(".answer-message").textContent="顯示答案後，本輪只供參考，不計入掌握進度。"; };
     stage.querySelector("#check-cloze").onclick = () => {
       if(revealed)return;
@@ -199,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     stage.querySelectorAll("[data-mastered-comprehension]").forEach(b => b.onclick = () => { delete state.comprehensionMistakes[b.dataset.masteredComprehension]; save(); render(); });
   }
   function render() {
-    const renderers = {dialogue:renderDialogue,comprehension:renderComprehension,activities:renderActivities,focus:renderFocus,cards:renderCards,choice:renderChoice,order:renderOrder,cloze:renderCloze,dictation:renderDictation,mistakes:renderMistakes};
+    const renderers = {dialogue:renderDialogue,translation:renderTranslation,comprehension:renderComprehension,activities:renderActivities,focus:renderFocus,cards:renderCards,choice:renderChoice,order:renderOrder,cloze:renderCloze,dictation:renderDictation,mistakes:renderMistakes};
     (renderers[state.mode] || renderDialogue)();
     stage.querySelectorAll("[data-focus-line]").forEach(b => b.onclick = () => showFocusDetail(b.dataset.focusLine));
     stage.querySelectorAll("[data-listen]").forEach(b => b.onclick = () => play(b.dataset.listen));
@@ -228,5 +229,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state.mode === "cards" && ["ArrowLeft","ArrowRight"].includes(e.key)) { state.card=(state.card+(e.key==="ArrowRight"?1:data.items.length-1))%data.items.length; state.flipped=false; save(); render(); }
   });
   document.querySelectorAll("[data-mode]").forEach(b => b.classList.toggle("active",b.dataset.mode===state.mode));
+  const teacherMode=new URLSearchParams(location.search).get("mode");
+  if(["dialogue","activities"].includes(teacherMode))state.mode=teacherMode;
   updateSummary(); render();
+  if(teacherMode)document.querySelectorAll("[data-mode]").forEach(button=>button.classList.toggle("active",button.dataset.mode===state.mode));
 });
