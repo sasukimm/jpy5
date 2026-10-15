@@ -49,6 +49,29 @@ The dependency-free static site is organized around a homepage, a Chapter 13 lea
 - Textbook/listening: the complete Chapter 13 `3. もう一度聞こう` dialogue and official audio, seven source-aligned comprehension questions, five clickable underlined expressions with reading/meaning/usage popups, focused replay, flashcards, multiple choice, sentence ordering, dialogue fill-in, exact dictation, and mistake review
 - Experience: responsive layout, automatic/light/dark themes, and app icons for browser/iPhone shortcuts
 
+### Lesson 13 teacher additions (3–10 October 2026)
+
+The existing modules include source-linked teacher notes for all eight grammar patterns, seven conversation explanations, six role-play hints, and twelve vocabulary usage notes. Reading activities include the teacher's presentation framework and an approximately 400-character writing exercise with a saved draft and character count. Open answers remain ungraded; existing vocabulary IDs, quiz records, and audio timing are preserved. The Review page links directly to the additions.
+
+Teacher content and PDF page references live in `assets/ch13-teacher-additions.js`. Duplicate scans are consolidated with their corresponding handouts. Where the reading slides simplify the ending, a labelled note preserves the original text's distinction between Ikebukuro and Aomori. Run `node scripts/test-lesson13-additions.mjs` with Playwright available, alongside the existing Lesson 13 checks, after changing these additions.
+
+All 35 added notes and the writing task were checked against their sources on 2026-10-13. [Lesson 13 source audit](LESSON13_SOURCE_AUDIT.md) records corrections, qualifications, and independent dictionary/research references. The modules label these as `校對補充`, distinguish a teacher's contextual interpretation from a general grammar rule, and display source cautions beside simplified reading questions and answers.
+
+### Teacher exercises for Lessons 14–20
+
+Each lesson's Review page includes **老師 Exercise**, following Lesson 13's worksheet layout. The seven teacher PDFs (41 pages) are transcribed in source order with hidden answers, labelled suggested responses for open questions, and contextual Traditional Chinese word-bank help. These exercises do not change scores or saved progress. Each page links its source PDF and identifies source inconsistencies beside the affected questions.
+
+[Exercise source audit](LESSONS14_20_EXERCISE_AUDIT.md) records page coverage, answer review and source cautions. Browser checks cover all seven lessons at mobile, tablet and desktop widths, answer disclosure, word help, accessibility and progress retention:
+
+```bash
+node scripts/test-lessons14-20-teacher.mjs
+node scripts/test-lesson13-teacher.mjs
+node scripts/generate-offline-manifest.mjs
+node scripts/test-pwa.mjs
+```
+
+`scripts/test-teacher-exercise-update.mjs` checks the real service-worker update from a prior published revision, progress retention, and all seven updated pages offline. Set `JPY5_PREVIOUS_REF=HEAD` before committing this release, or select the preceding published commit after committing. Browser checks require Playwright and an installed browser, using `JPY5_BROWSER_CHANNEL=msedge` on Windows when needed.
+
 ## Source
 
 Most lesson material and audio are adapted for study use from [ttrw.jp](https://ttrw.jp/). Textbook PDF links are maintained centrally in `assets/common.js`:
@@ -60,5 +83,21 @@ Most lesson material and audio are adapted for study use from [ttrw.jp](https://
 # Optional Google progress sync
 
 JPY5 works without an account and retains progress in browser localStorage. Google login is optional; after first login the app merges the existing local records with the account's cloud records, keeps a local guest snapshot for sign-out, and writes future changes locally first before batching them to Firestore. Cloud state is one owner-only document at `jpy5Users/{uid}` with `schemaVersion`, `progress` (the existing localStorage payloads keyed by their original localStorage keys), and a server `updatedAt` timestamp.
+
+Sync includes Lessons 13–20. Returning logins merge offline records, writes use a Firestore transaction, and an account listener receives other-device progress. Histories merge by attempt ID, bookmarks retain the existing conservative union behavior, and dated quiz results resolve stale wrong-answer flags without removing unattempted mistakes. Theme preferences and unfinished quiz drafts remain device-local. The existing schema version, account path and owner-only rules are unchanged.
+
+Quiz pages for Lessons 13–20 offer **繼續未完成測驗** and **開始新測驗**. A device keeps one unfinished run per lesson, including its mode, ordered question IDs, question signatures, answers and current position. Answers and navigation save immediately. Starting a new quiz replaces only that lesson's draft; finishing writes one history record with the run ID and clears its draft. Practice/exam and Lessons 18–20 no-hint mode share this lifecycle. An incompatible question-bank change or malformed draft shows a recovery message, while completed records remain intact. Revision checks reject stale-tab writes, and supported browsers serialize completion with Web Locks.
+
+Local regression commands (browser suites require Playwright and an installed Edge, or `JPY5_BROWSER_CHANNEL`):
+
+```bash
+node scripts/test-quiz-reliability.mjs
+node scripts/test-progress-sync-reliability.mjs
+node scripts/test-firebase-sync.mjs
+node scripts/test-grammar-no-hint.mjs
+node scripts/test-pwa.mjs
+```
+
+The sync regression uses two isolated storage fixtures and a mocked Firestore service; it never logs in or writes real account progress. A live two-device Google account check is still a separate release verification.
 
 Before releasing, enable Google in Firebase Authentication, add `yuktun.github.io` as an authorized domain, and deploy `firestore.rules` from this repository. The web configuration is public by design; Firebase Authentication and the owner-only Firestore rules enforce access control.
