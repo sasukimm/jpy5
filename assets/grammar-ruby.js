@@ -1289,7 +1289,7 @@ window.JPY5GrammarRuby = (() => {
     "「<ruby>日本語<rt>にほんご</rt></ruby>って<ruby>難<rt>むずか</rt></ruby>しいよね」期待對方："
   ]
 ];
-  const map = new Map(entries);
+  const map = new Map([...entries, ...(window.JPY5_GRAMMAR_RUBY_EXTRA || [])]);
   const escape = value => String(value ?? "").replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
   const render = value => map.get(String(value ?? "")) || escape(value);
   const renderTitleInText = (value, title) => { const safeText=escape(value),safeTitle=escape(title); return safeTitle?safeText.replace(safeTitle,render(title)):safeText; };

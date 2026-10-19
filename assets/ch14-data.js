@@ -20,3 +20,27 @@ window.JPY5_DATA = (() => {
   });
   return {patterns,questions:qs};
 })();
+
+// Preserve hash-only signatures so existing device-local quiz drafts resume.
+window.JPY5ProtectedLesson="14";
+window.JPY5QuestionSignatures={"sai-meaning":"sha256:0033f9e7c4745aadfc8d7b26757db3336dc8548f680571fc5c5febb41ac12eba","sai-formation":"sha256:6fdbb8476124e6f66ec64805f16f9c20f7c63194e5f31b9d177b060eba221ba0","sai-source":"sha256:a4f6bf053d5f70ab4cb1f3a856f5ebd6dee42020f3de412baca8a08eb02b2f5b","toitta-meaning":"sha256:cae6ba14d02b909ff117735d62de8e6fc217b72fca6eb9250f9088dfdf884d0a","toitta-formation":"sha256:df8cfc6fdd1ff2ed2b732e2dfa2aeebbc43d16efaf76dab5d9ca6fd11b2451c5","toitta-source":"sha256:e68e4096dcfa39f4f7145ac99c83be165e8c6ed5ca6f63d942db1dfb145dea10","niwatatte-meaning":"sha256:a6d3796ed24c3a487911afcaf2671bfe3ff28d3b9e6b36d845e23f1ca7ea18db","niwatatte-formation":"sha256:180869562ee42ab0ef541da3d9414c9fd6f9a63d0d4f7fbc06908035a3216b32","niwatatte-source":"sha256:aa634bbbe36cfb8cbb11810760f0617f5e8a3e731bdd2ee483403c32ff4d6291","uchini-meaning":"sha256:ba17b575eda7f72b002aa92464064e28d26d495ab0c6e766140d3ffcbd9ba1d9","uchini-formation":"sha256:e817d2ce51e3625c56742600d3d3d6d776b8b6669b2a564a6fdada229590499f","uchini-source":"sha256:f1744f93dc14def63d25bbf342a7a5c599c75e7dc6e132d1d16b62c5c78dd721","nitotte-meaning":"sha256:b80139203a490c81d57a6994b23af93dbe95490736d83392d827289154032f51","nitotte-formation":"sha256:a708b6b3e12484e28785369626dc6fb109bbb7ccad13caede0eb023a3a6940cf","nitotte-source":"sha256:887d7f61f83a0e6237a4ee7fbaa1b7f33bea9298667d01101b1912b845049496","towa-meaning":"sha256:056711e0b9a7d575d98c9bab6d8789ece3f75b29ca0dc72d395566cfc8d4781d","towa-formation":"sha256:bdd9003db4295aad081890f53b861a178bd37338efdae9eb47d8c665082878ff","towa-source":"sha256:67e82911c47f42bd68f1f4f57bbf116abba47e3441a10c76f00748d5b1704695","nioite-meaning":"sha256:fe2d1c213728264b427107942c5ca9af1b3e86d8a71b709094a6ae1a4ddaeeb8","nioite-formation":"sha256:05715d536028e99c97793249559baffe5e9b2ce7de0af3c71b774e90d9a75477","nioite-source":"sha256:958af0f427a320d69e06539745b66c06357c4f3c1c79fbf16134fdebd5065f51","wakeda-meaning":"sha256:c60b641bbee4e2c0e7e627bcbba44623cb0936bd7f2dafe758aa17410b106955","wakeda-formation":"sha256:7d1876c3cc52367377d09d2c326c0f29914ae5a13136cfa51fe591e4471825c0","wakeda-source":"sha256:91ca79a60030ec17ca4c46f11425b9a62e03fcc8bb2c12e961888c968ea032cb","nodewanaidarouka-meaning":"sha256:3a26bdbb77fb11bb52062a6af4a5abd7f9efb2601f945631953f2ef833922f6b","nodewanaidarouka-formation":"sha256:7464a4b28d88fccbf2b2f49105548e594ab07df38ddabac28e2f8a09c7a70521","nodewanaidarouka-source":"sha256:647f93001b4d5f9e5e6a0940ff36ade3e4f24cf6633f2fe97b6e8726df54abfa","kke-meaning":"sha256:655f3f8505fd7aefba97df9ab9bd9816e60357ef85ef764694f945df8a2f840c","kke-formation":"sha256:6492c8a73f46058df67bad4822d864d7bf60472f3467a18e90ce6b141a1c8b04","kke-source":"sha256:34e15b32ac89d02beb3054f3b06da75335db40175643a5ce0aa53ef9c355f00b","ge-meaning":"sha256:9eb235d7febd41dd0a2fec103eecd476bebd72b774de9ccaebb8cafdcf9aab82","ge-formation":"sha256:f4124a9df3c0ad0a967324fd6529fea19b8356dc35be9faaff300bec70361a07","ge-source":"sha256:9dbb2587407ad8d37d5272ab408f0854265a18cf1b05a6456afbd56d85d3092c"};
+
+// Migrate a compatible pre-protection draft before the ordinary quiz starts.
+// Only the signature representation changes; answers, ordering and IDs stay.
+(() => {
+  try {
+    const key='jpy5.chapter14.quiz.activeRun',raw=localStorage.getItem(key);
+    if(!raw)return;
+    const draft=JSON.parse(raw);
+    if(!Array.isArray(draft?.signatures)||!Array.isArray(draft.questionIds))return;
+    let changed=false;
+    const signatures=draft.signatures.map((value,index)=>{
+      const question=window.JPY5_DATA.questions.find(item=>item.id===draft.questionIds[index]);
+      if(question&&value===JSON.stringify([question.id,question.pattern,question.prompt,question.options,question.answer])){
+        changed=true;return window.JPY5QuestionSignatures[question.id];
+      }
+      return value;
+    });
+    if(changed&&localStorage.getItem(key)===raw)localStorage.setItem(key,JSON.stringify({...draft,signatures}));
+  } catch { /* Corrupt or unavailable storage remains handled by quiz progress. */ }
+})();
