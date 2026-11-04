@@ -1,0 +1,22 @@
+{
+  "name": "jpy5-local-checks",
+  "private": true,
+  "scripts": {
+    "test:teacher": "node --test scripts/test-teacher-access.mjs",
+    "test:rules": "firebase emulators:exec --project demo-jpy5-teacher --only firestore \"node scripts/test-teacher-rules.mjs\"",
+    "test:teacher-browser": "node scripts/test-teacher-access-browser.mjs",
+    "test:teacher-grammar": "node scripts/test-teacher-grammar-browser.mjs",
+    "test:teacher-autoload": "node scripts/test-teacher-autoload.mjs",
+    "test:teacher-demo": "node scripts/test-teacher-demo.mjs",
+    "test:lesson14-review": "node scripts/test-lesson14-review.mjs",
+    "test:textbook-renderer": "node scripts/test-textbook-exercises-renderer.mjs",
+    "test:textbook-14-20": "node scripts/test-textbook-exercises-14-20.mjs",
+    "test:textbook-offline": "node scripts/test-textbook-exercises-offline.mjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "4.0.1",
+    "firebase": "11.10.0",
+    "firebase-tools": "14.12.1",
+    "playwright": "1.56.1"
+  }
+}

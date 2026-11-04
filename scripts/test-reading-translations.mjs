@@ -57,8 +57,13 @@ await page.addInitScript(() => {
     if (!states.has(audio)) states.set(audio, { time: 0, paused: true, plays: 0 });
     return states.get(audio);
   };
-  Object.defineProperty(HTMLMediaElement.prototype, "currentTime", { get() { return state(this).time; }, set(value) { state(this).time = value; } });
+  Object.defineProperty(HTMLMediaElement.prototype, "currentTime", { get() { return state(this).time; }, set(value) {
+    state(this).time = value;
+    // The range player coalesces rapid requests until the native seek completes.
+    queueMicrotask(() => this.dispatchEvent(new Event("seeked")));
+  } });
   Object.defineProperty(HTMLMediaElement.prototype, "paused", { get() { return state(this).paused; } });
+  Object.defineProperty(HTMLMediaElement.prototype, "readyState", { get() { return 4; } });
   HTMLMediaElement.prototype.play = function() {
     state(this).paused = false;
     state(this).plays++;
@@ -68,7 +73,7 @@ await page.addInitScript(() => {
   HTMLMediaElement.prototype.pause = function() { state(this).paused = true; };
   HTMLMediaElement.prototype.load = function() {};
 });
-await page.route("https://ttrw.jp/static/sound/**", route => route.abort());
+await page.route("**/*.mp3", route => route.abort());
 
 try {
   for (const lesson of lessons) {
