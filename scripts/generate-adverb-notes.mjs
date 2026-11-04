@@ -31,10 +31,13 @@ ${data.practices.map((p,i)=>`      <article class="teacher-practice" data-questi
 
 const check = process.argv.includes('--check');
 for (const [n, data] of Object.entries(lessons)) {
+  if (data.protected) continue;
   const lesson = Number(n), file = `chapter-${n}-vocabulary.html`;
-  const before = await readFile(file, 'utf8');
+  const before = (await readFile(file, 'utf8')).replace(/\r\n/g, '\n');
   let html = before;
-  const block = render(lesson,data);
+  let block = render(lesson,data);
+  // Lesson 14 keeps the existing native collapsed panel; its content is public.
+  if (lesson === 14) block = block.replace('<section class="teacher-supplement adverb-notes"', '<details class="teacher-supplement adverb-notes teacher-note-panel"').replace('data-source-page="2">', 'data-source-page="2">\n      <summary>老師副詞筆記</summary>\n      <div class="teacher-note-panel-body">').replace('    </section>', '      </div>\n    </details>');
   if (html.includes(start)) html = html.replace(/<!-- BEGIN SHARED ADVERB NOTES -->[\s\S]*?<!-- END SHARED ADVERB NOTES -->/, block);
   else if (lesson === 13) {
     const from = html.indexOf('<section class="teacher-supplement" id="teacher-adverbs"');
