@@ -4,10 +4,21 @@ A mobile-friendly study site for **みんなの日本語 中級Ⅱ**. Lessons 13
 
 ## Run locally
 
-No build step or dependencies are required.
+The local lesson 14 layout proposal restores general grammar, flashcards, quiz
+and history as public study tools, with collapsed teacher-note panels whose
+real grammar supplements load only after server authorization.
+The lesson 14 review/Exercise is public, including the optional offline package.
+The collapsed lesson 14 adverb supplement is also public, including the optional offline package. The grammar teacher notes require server authorization and an internet connection.
+Review [the proposed disclosure boundary](LESSON14_LAYOUT_REVIEW.md) before release.
+Lesson 13 remains public. See
+[the trial boundary, local tests and approval checklist](TEACHER_ACCESS_TRIAL.md).
+When ignored migration material is present, use `node scripts/serve-public.mjs`
+for a preview that serves only public release files.
+
+No application build step is required. Local tests use the development dependencies.
 
 ```bash
-python -m http.server 8000
+node scripts/serve-public.mjs
 ```
 
 Then open <http://localhost:8000>.
@@ -16,7 +27,7 @@ Then open <http://localhost:8000>.
 
 The default is online mode. Opening or installing the app does **not** download an offline package. Normal page requests and browser HTTP caching still work as usual. Open **離線設定** in the header and choose **下載離線內容** to save all 73 study pages, text, vocabulary, exercises and required local assets. The dialog displays the package size, file progress, completion and actionable errors. Keep it open until **離線已就緒** appears.
 
-**All PDFs (including same-origin PDFs), external links, external audio and Google sync require internet and are excluded.** Links and audio players are labelled accordingly. Device pronunciation also requires an installed local Japanese voice; test it before relying on it offline.
+**All PDFs (including same-origin PDFs), external links, all MP3 audio (including same-origin recordings) and Google sync require internet and are excluded.** Links and audio players are labelled accordingly. Device pronunciation also requires an installed local Japanese voice; test it before relying on it offline.
 
 Updates download only when selected. The small service worker/inventory can update automatically, and the dialog reports when the saved package has a newer version available. Each file is checked against the release hash (text line endings are normalized for Windows/Git portability). A new package becomes active only after every required file is present. Failed, interrupted or inconsistent deployments never replace a complete saved package. Choose **重新載入新版本** after an update to reload the current page; other open pages can be reloaded when convenient.
 
@@ -35,9 +46,11 @@ node scripts/generate-offline-manifest.mjs
 node scripts/test-pwa.mjs
 node scripts/test-offline-manifest.mjs
 node scripts/test-offline-mode.mjs
+node scripts/test-flashcard-prompts-layout.mjs
+node scripts/test-flashcard-update.mjs
 ```
 
-The browser suite requires Playwright and an installed Edge (or set JPY5_BROWSER_CHANNEL). It uses isolated profiles, a local server and no live accounts. It covers the online default, download/retry/cancellation, persistent-profile cold start, all 73 pages offline, PDFs/external links, update detection and integrity failures, removal/re-enabling, partial eviction and scoped legacy-cache cleanup. The existing adverb and teacher-exercise update suites exercise actual migration from the previous automatic worker followed by explicit offline download; set JPY5_PREVIOUS_REF to the last pre-opt-in commit for those migration suites.
+The browser suite requires Playwright and an installed Edge (or set JPY5_BROWSER_CHANNEL). It uses isolated profiles, a local server and no live accounts. It covers the online default, download/retry/cancellation, persistent-profile cold start, all 73 pages offline, PDFs/external links, update detection and integrity failures, removal/re-enabling, partial eviction and scoped legacy-cache cleanup. The adverb update suite exercises explicit package update from published revision `2cb386d9fe158d8ccc18b6d43c3f09d93afd8fee`; override `JPY5_PREVIOUS_REF` only when testing another prior release. The older teacher-exercise migration suite uses the pre-opt-in worker.
 
 ## Structure
 
@@ -45,7 +58,7 @@ The dependency-free static site is organized around a homepage, a Chapter 13 lea
 
 ### Chapter 13 complete edition
 
-- Vocabulary: all 159 source words, three textbook sections, searchable/filterable list, two-way kana/kanji-or-original flashcards, keyboard controls, random order, marking, starred and targeted review queues, and saved progress
+- Vocabulary: 191 entries: the original 159-entry bank plus 32 source-linked textbook 問題 vocabulary entries, with stable original IDs, searchable/filterable lists, two-way cards, keyboard controls, retained random order, marking, starred and targeted review queues, and saved progress. Lesson 14 similarly retains its original 208 IDs and appends 18 問題 entries plus 生産 for 227 entries; the original handbooks do not contain all newly appended entries.
 - Grammar: eight source-grounded patterns, 25 source examples, formation rules, usage notes, contrasts, 33 flashcards, two directions, review queues, and saved progress
 - Quiz: 40 questions, practice/exam modes, grammar filters, incorrect retry, starring, and saved history
 - Reading: the complete `ゲッキョク株式会社` text and official reading audio, Traditional Chinese translation, full furigana and font controls, 13 comprehension questions, answer-finding, vocabulary cards, mock exam, and mistake review
@@ -53,6 +66,8 @@ The dependency-free static site is organized around a homepage, a Chapter 13 lea
 - Experience: responsive layout, automatic/light/dark themes, and app icons for browser/iPhone shortcuts
 
 ### Lesson 13 teacher additions (3–10 October 2026)
+
+The [17 OCT revised handout audit](LESSON13_OCT17_SOURCE_AUDIT.md) maps a later 27-page grammar source to five additional collapsed grammar notes, 26 existing vocabulary entries, eleven annotations inside existing hidden answers, and two open-response instructions. Original notes/questions and saved progress remain intact; Review links point to the matching modules. Run `node scripts/test-lesson13-oct17.mjs` for source parity, responsive interactions and fresh-tab offline checks.
 
 The Grammar Notes page also places all 21 textbook response items from PDF pages 9-12 beside their matching eight grammar patterns, after the examples. Each exercise group is collapsed by default like the teacher supplements, and each answer has its own keyboard-accessible disclosure, closed initially and after reload. Japanese prompts, choices, models, word banks and answers include hiragana ruby using the existing teacher-supplement rendering convention. Open answers are labelled as suggestions; the two personal-response activities have explicitly non-official example responses. The exercises do not score or write progress. Their text is included only in an explicitly requested offline package; linked PDFs remain online-only. Run `node scripts/test-lesson13-textbook-exercises.mjs` after changing these exercises.
 
@@ -62,7 +77,17 @@ Teacher content and PDF page references live in `assets/ch13-teacher-additions.j
 
 All 35 added notes and the writing task were checked against their sources on 2026-10-13. [Lesson 13 source audit](LESSON13_SOURCE_AUDIT.md) records corrections, qualifications, and independent dictionary/research references. The modules label these as `校對補充`, distinguish a teacher's contextual interpretation from a general grammar rule, and display source cautions beside simplified reading questions and answers.
 
-### Teacher exercises for Lessons 14–20
+### Lesson 14 teacher additions (24–31 October 2026)
+
+The four updated teacher PDFs are mapped to the matching modules, following Lesson 13: seven reading notes, eight dialogue notes, seven hidden-answer response exercises, 104 annotations on existing vocabulary entries, and reading/discussion/writing guidance. Review links lead directly to the additions. Original questions, word IDs, audio and saved progress remain intact. See [the source mapping and validation](LESSON14_OCTOBER_SOURCE_AUDIT.md).
+
+The eleven Teacher’s notes panels now retrieve real grammar supplements from the existing protected Firestore document. The user chose to keep these notes restricted to approved accounts; their bodies are absent from the public repository and offline package. Run `node scripts/test-lesson14-october.mjs` alongside the reading, listening, authorization and offline checks. The private QA flag `JPY5_TEST_PRIVATE=1` uses the ignored local payload; normal test runs use synthetic notes.
+
+### Textbook grammar exercises for Lessons 14-20
+
+Grammar Notes now place 199 textbook response items in 110 collapsed sections beside 69 grammar groups, with separate hidden answers, hiragana ruby, printed exercise models, and source-page links. Fixed official answers, answer-book examples, and fourteen omitted personal-response keys are distinguished. Lesson 17's source-only 上（じょう） check appears in an unscored appendix; existing quiz banks and saved progress are preserved. The public text/code can be saved in the optional offline package; linked PDFs require internet and private source scans are excluded. See [the textbook exercise audit](TEXTBOOK_EXERCISES_14_20_AUDIT.md) for per-lesson coverage, answer policy, and completed local validation. Run `npm run test:textbook-renderer`, `npm run test:textbook-14-20`, and `npm run test:textbook-offline` alongside the existing Lesson 13 and offline checks. All 199 items passed integration and fresh-tab offline checks; existing quiz, offline, and protected-content regressions also passed. These results are local and unpublished; no Firebase, authentication, or protection settings were changed.
+
+### Teacher exercises for Lessons 14-20
 
 Each lesson's Review page includes **老師 Exercise**, following Lesson 13's worksheet layout. The seven teacher PDFs (41 pages) are transcribed in source order with hidden answers, labelled suggested responses for open questions, and contextual Traditional Chinese word-bank help. These exercises do not change scores or saved progress. Each page links its source PDF and identifies source inconsistencies beside the affected questions.
 
@@ -81,7 +106,13 @@ node scripts/test-pwa.mjs
 
 Every Vocabulary page includes **老師副詞 · 例句・語感・練習**. All eight lessons share the same responsive cards, Traditional Chinese meanings and translations, teacher-source disclosures, comparison notes, cross-lesson links and hidden practice answers. The full eight-page handout contributes 34 grouped cards, 73 example blocks and 50 practice prompts. Lesson 13 now uses the shared format too. Ambiguous questions and simplified source rules are qualified beside the relevant content; reference answers are labelled as learning additions.
 
-Edit `scripts/adverb-notes-data.mjs`, then run `node scripts/generate-adverb-notes.mjs` and `node scripts/generate-offline-manifest.mjs`. [Adverb source audit](ADVERB_SOURCE_AUDIT.md) records coverage and qualifications. Validate with `node scripts/test-adverb-notes.mjs`, `node scripts/test-lesson13-teacher.mjs`, `node scripts/test-pwa.mjs` and `node scripts/test-adverb-update.mjs` (set `JPY5_PREVIOUS_REF=HEAD` before committing). Existing vocabulary counts and saved progress are unchanged.
+Edit `scripts/adverb-notes-data.mjs`, then run `node scripts/generate-adverb-notes.mjs` and `node scripts/generate-offline-manifest.mjs`. [Adverb source audit](ADVERB_SOURCE_AUDIT.md) records coverage and qualifications. Validate with `node scripts/test-adverb-notes.mjs`, `node scripts/test-lesson13-teacher.mjs`, `node scripts/test-pwa.mjs` and `node scripts/test-adverb-update.mjs` (defaults to the preceding published adverb release). Existing vocabulary counts and saved progress are unchanged.
+
+## Audio hosting
+
+The 16 main Reading and Listening recordings for lessons 13–20 are hosted under `assets/audio/reading/` and `assets/audio/listening/` on GitHub Pages, with original filenames and bytes preserved. Full-track, sentence and paragraph playback use the same local recordings. The ten additional exercise tracks not supplied locally retain their original external links. All MP3s remain online-only and are excluded from the optional offline package.
+
+Run `node scripts/test-hosted-audio.mjs` for file/link checks, native playback, sentence/paragraph seeking, preview-server byte ranges, and offline/protected-file exclusions. It starts the public preview on port 8000 and uses Edge (or `JPY5_BROWSER_CHANNEL`).
 
 ## Source
 
