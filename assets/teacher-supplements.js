@@ -52,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   // Reuse one popover; renderers can initialize newly inserted word banks.
   window.JPY5WordHelp ||= (() => {
+    const triggerSelector = ".teacher-word-bank [data-word-meaning], .teacher-word-inline[data-word-meaning]";
     const initialized = new WeakSet();
     const popover = document.createElement("div");
     popover.className = "teacher-word-help-popover";
@@ -59,6 +60,9 @@ document.addEventListener("DOMContentLoaded", () => {
     popover.setAttribute("role", "tooltip");
     popover.hidden = true;
     popover.innerHTML = '<span class="teacher-label">本題語境</span><h2 lang="ja"></h2><p class="teacher-word-meaning"></p><p class="teacher-word-usage"></p>';
+    const title = popover.querySelector("h2");
+    const meaning = popover.querySelector(".teacher-word-meaning");
+    const usage = popover.querySelector(".teacher-word-usage");
     document.body.append(popover);
     let trigger = null, dismissTimer = null, pointerType = "", interaction = "";
     const cancelDismiss = () => clearTimeout(dismissTimer);
@@ -73,9 +77,17 @@ document.addEventListener("DOMContentLoaded", () => {
       trigger?.removeAttribute("aria-describedby");
       trigger = button;
       interaction = source;
-      popover.querySelector("h2").textContent = button.textContent;
-      popover.querySelector(".teacher-word-meaning").textContent = button.dataset.wordMeaning;
-      popover.querySelector(".teacher-word-usage").textContent = button.dataset.wordUsage;
+      if (button.dataset.wordTitle) {
+        title.textContent = button.dataset.wordTitle;
+      } else {
+        const label = button.cloneNode(true);
+        label.querySelectorAll("rt, rp").forEach(node => node.remove());
+        title.textContent = label.textContent.trim();
+      }
+      title.lang = button.lang || "ja";
+      meaning.textContent = button.dataset.wordMeaning;
+      meaning.hidden = !button.dataset.wordMeaning;
+      usage.textContent = button.dataset.wordUsage;
       button.setAttribute("aria-describedby", popover.id);
       popover.hidden = false;
       const anchor = button.getBoundingClientRect(), bounds = popover.getBoundingClientRect();
@@ -89,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const dismissAfterLeave = () => { cancelDismiss(); dismissTimer = setTimeout(hide, 120); };
     function init(root = document) {
-      root.querySelectorAll(".teacher-word-bank [data-word-meaning]").forEach(button => {
+      root.querySelectorAll(triggerSelector).forEach(button => {
         if (initialized.has(button)) return;
         initialized.add(button);
         button.addEventListener("pointerenter", event => {
@@ -114,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     popover.addEventListener("pointerleave", () => { if (interaction === "hover") dismissAfterLeave(); });
     document.addEventListener("pointerdown", event => {
       pointerType = event.pointerType;
-      if (!event.target.closest(".teacher-word-bank [data-word-meaning]") && !popover.contains(event.target)) hide();
+      if (!event.target.closest(triggerSelector) && !popover.contains(event.target)) hide();
     });
     document.addEventListener("keydown", event => {
       if (event.key === "Tab") pointerType = "";
