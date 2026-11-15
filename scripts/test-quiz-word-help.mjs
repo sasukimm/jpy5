@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFile,mkdir} from 'node:fs/promises';
+import {readFile} from 'node:fs/promises';
 import {resolve, sep, extname} from 'node:path';
 import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
 const {chromium} = createRequire(resolve('package.json'))('playwright');
 const root = process.cwd();
-const parse = s => JSON.parse(s.replace(/\r\n/g,'\n').match(/const data = ([\s\S]*?);\n  const host/)[1]);
+const parse = s => JSON.parse(s.match(/const data = ([\s\S]*?);\n  const host/)[1]);
 assert.deepEqual(parse(await readFile('assets/ch13-quiz1.js','utf8')), parse(execFileSync('git',['show','HEAD:assets/ch13-quiz1.js'],{encoding:'utf8'})), 'Existing lesson data must be identical');
 const server = createServer(async(req,res) => {
   const file=resolve(root,'.'+new URL(req.url,'http://localhost').pathname);
@@ -89,7 +89,6 @@ try {
   await touchWord.tap();await touchHelp.waitFor({state:'visible'});
   await phone.locator('#quiz13-III-1-0').tap();await touchHelp.waitFor({state:'hidden'});
   await touchWord.tap();await touchHelp.waitFor({state:'visible'});
-  await mkdir('tmp',{recursive:true});
   await phone.screenshot({path:resolve('tmp/quiz-word-help-phone.png')});
   await mobile.close();
   console.log('PASS touch: tap opens, second tap closes after repeated initialization, outside tap dismisses.');

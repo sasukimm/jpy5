@@ -99,8 +99,14 @@ async function getStatus(page) {
     navigator.serviceWorker.controller.postMessage({ type: "JPY5_CACHE_STATUS" });
   }));
 }
+async function revealOfflineButton(page) {
+  const utilities = page.locator(".site-utilities:not([open]) > summary");
+  if (await utilities.count()) await utilities.click();
+}
 async function open(page) {
-  if (!await page.locator(".pwa-offline-dialog").evaluate(el => el.open)) await page.locator(".pwa-status").click();
+  if (await page.locator(".pwa-offline-dialog").evaluate(el => el.open)) return;
+  await revealOfflineButton(page);
+  await page.locator(".pwa-status").click();
 }
 async function ready(page) {
   await waitState(page, () => document.querySelector(".pwa-status")?.dataset.state === "ready");
@@ -236,6 +242,7 @@ try {
   for (const file of pages) {
     const response = await page.goto(`${base}${file}?offline-test=1`);
     assert.equal(response.status(), 200, file);
+    await revealOfflineButton(page);
     await page.waitForSelector(".pwa-status");
   }
   await page.goto(`${base}chapter-20-vocabulary.html`);
@@ -302,7 +309,8 @@ try {
   delay = true;
   await page.locator("[data-offline-download]").click();
   await waitState(page, () => document.querySelector("[data-offline-status]")?.textContent.includes("下載中 0/1"));
-  assert.match(await page.locator("[data-offline-status]").textContent(), /已檢查 254 個，重用 253 個，已下載 0 個/);
+  const assetCount = release.assets.length;
+  assert.match(await page.locator("[data-offline-status]").textContent(), new RegExp(`已檢查 ${assetCount} 個，重用 ${assetCount - 1} 個，已下載 0 個`));
   await page.locator("[data-offline-cancel]").click();
   await waitState(page, () => document.querySelector("[data-offline-status]")?.textContent.includes("已取消下載"));
   await oldVersionStillWorks();

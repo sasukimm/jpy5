@@ -1,17 +1,10 @@
 # 日本語 Year 5
 
-A mobile-friendly study site for **みんなの日本語 中級Ⅱ**. Lessons 13–16 provide vocabulary, grammar, reading, listening, flashcards, quizzes, history, and mixed review.
+A mobile-friendly study site for **みんなの日本語 中級Ⅱ**. Lessons 13–20 provide vocabulary, grammar, reading, listening, flashcards, quizzes, history, and mixed review.
 
 ## Run locally
 
-The local lesson 14 layout proposal restores general grammar, flashcards, quiz
-and history as public study tools, with collapsed teacher-note panels whose
-real grammar supplements load only after server authorization.
-The lesson 14 review/Exercise is public, including the optional offline package.
-The collapsed lesson 14 adverb supplement is also public, including the optional offline package. The grammar teacher notes require server authorization and an internet connection.
-Review [the proposed disclosure boundary](LESSON14_LAYOUT_REVIEW.md) before release.
-Lesson 13 remains public. See
-[the trial boundary, local tests and approval checklist](TEACHER_ACCESS_TRIAL.md).
+Lessons 13 and 14 are available without signing in. Both use collapsed teacher-note panels and include their study content in the optional offline package. Google sign-in is used for progress sync. The earlier access trial is recorded in [the trial notes](TEACHER_ACCESS_TRIAL.md).
 When ignored migration material is present, use `node scripts/serve-public.mjs`
 for a preview that serves only public release files.
 
@@ -25,7 +18,7 @@ Then open <http://localhost:8000>.
 
 ## Optional offline use and updates
 
-The default is online mode. Opening or installing the app does **not** download an offline package. Normal page requests and browser HTTP caching still work as usual. Open **離線設定** in the header and choose **下載離線內容** to save all 73 study pages, text, vocabulary, exercises and required local assets. The dialog displays the package size, file progress, completion and actionable errors. Keep it open until **離線已就緒** appears.
+The default is online mode. Opening or installing the app does **not** download an offline package. Normal page requests and browser HTTP caching still work as usual. Open **離線設定** in the header (under **工具** on the homepage and article pages). Choose **下載離線內容** to save all 77 pages, including the articles, lesson text, vocabulary, exercises and required local assets. The dialog displays the package size, file progress, completion and actionable errors. Keep it open until **離線已就緒** appears.
 
 **All PDFs (including same-origin PDFs), external links, all MP3 audio (including same-origin recordings) and Google sync require internet and are excluded.** Links and audio players are labelled accordingly. Device pronunciation also requires an installed local Japanese voice; test it before relying on it offline.
 
@@ -52,13 +45,29 @@ node scripts/test-flashcard-prompts-layout.mjs
 node scripts/test-flashcard-update.mjs
 ```
 
-The browser suite requires Playwright and an installed Edge (or set JPY5_BROWSER_CHANNEL). It uses isolated profiles, a local server and no live accounts. It covers the online default, download/retry/cancellation, persistent-profile cold start, all 73 pages offline, PDFs/external links, incremental downloads, integrity failures, removal/re-enabling, partial eviction and scoped legacy-cache cleanup. Set `JPY5_OFFLINE_BASELINE_REF` to a prior Git revision to benchmark its service worker, or `JPY5_OFFLINE_BENCHMARK_ONLY=1` to benchmark the current worker. Both benchmark modes perform three single-file updates and log request count, response-body bytes, peak concurrent requests and elapsed time. `JPY5_OFFLINE_BENCHMARK_DELAY` controls the simulated server delay per asset in milliseconds and defaults to 20.
+The browser suite requires Playwright and an installed Edge (or set JPY5_BROWSER_CHANNEL). It uses isolated profiles, a local server and no live accounts. It covers the online default, download/retry/cancellation, persistent-profile cold start, all 77 pages offline, PDFs/external links, incremental downloads, integrity failures, removal/re-enabling, partial eviction and scoped legacy-cache cleanup. Set `JPY5_OFFLINE_BASELINE_REF` to a prior Git revision to benchmark its service worker, or `JPY5_OFFLINE_BENCHMARK_ONLY=1` to benchmark the current worker. Both benchmark modes perform three single-file updates and log request count, response-body bytes, peak concurrent requests and elapsed time. `JPY5_OFFLINE_BENCHMARK_DELAY` controls the simulated server delay per asset in milliseconds and defaults to 20.
 
 The adverb update suite exercises explicit package update from published revision `2cb386d9fe158d8ccc18b6d43c3f09d93afd8fee`; override `JPY5_PREVIOUS_REF` only when testing another prior release. The older teacher-exercise migration suite uses the pre-opt-in worker.
 
 ## Structure
 
-The dependency-free static site is organized around a homepage, a Chapter 13 learning hub, separate study-tool pages, and shared data/behavior modules under `assets/`.
+The dependency-free static site has a homepage, lesson hubs, study pages, and an article archive. Shared data and scripts live under `assets/`. The homepage activity chooser starts at the current class lesson. When the class advances, update `classLesson` in `assets/lesson-quick-switcher.js` and the matching fallback links and text in `index.html`. The homepage also remembers the last lesson hub or activity opened on the same device, separately from study progress and Google sync.
+
+### Publishing a study article
+
+1. Keep drafts outside the root HTML files and `assets/`, which are inputs to the public inventory.
+2. When the article is ready to publish through a site update, use an existing reader as the template for a root `article-<slug>.html`. Use a unique lowercase hyphenated slug, a Traditional Chinese title and summary, and working links to relevant study pages.
+3. Add the entry to `assets/posts.json` with `slug`, `title`, `summary`, `category`, `publishedAt` (Hong Kong date in YYYY-MM-DD), and `readingMinutes`. Keep the original `publishedAt` for edits. Use the optional `updatedAt` and show the revision date in the reader when applicable. Keep the metadata, reader heading, and dates in agreement.
+4. Update the static fallback cards in `articles.html` (all articles) and `index.html` (latest three). Sort by publication date descending, then by slug ascending for equal dates. The lists load from metadata when JavaScript and the data file are available.
+5. Run the checks below before previewing. Restart a running public preview after regenerating the inventory because the server reads the allowlist at startup. Verify the reader, summary, dates, and related lesson links in the preview.
+
+```bash
+node scripts/generate-offline-manifest.mjs
+node scripts/test-home-navigation.mjs
+node scripts/test-pwa.mjs
+node scripts/test-offline-manifest.mjs
+node scripts/serve-public.mjs
+```
 
 ### Chapter 13 complete edition
 
@@ -85,7 +94,7 @@ All 35 added notes and the writing task were checked against their sources on 20
 
 The four updated teacher PDFs are mapped to the matching modules, following Lesson 13: seven reading notes, eight dialogue notes, seven hidden-answer response exercises, 104 annotations on existing vocabulary entries, and reading/discussion/writing guidance. Review links lead directly to the additions. Original questions, word IDs, audio and saved progress remain intact. See [the source mapping and validation](LESSON14_OCTOBER_SOURCE_AUDIT.md).
 
-The eleven Teacher’s notes panels now retrieve real grammar supplements from the existing protected Firestore document. The user chose to keep these notes restricted to approved accounts; their bodies are absent from the public repository and offline package. Run `node scripts/test-lesson14-october.mjs` alongside the reading, listening, authorization and offline checks. The private QA flag `JPY5_TEST_PRIVATE=1` uses the ignored local payload; normal test runs use synthetic notes.
+Lesson 14’s eleven public grammar supplements use the same collapsed panels as Lesson 13 and include 75 Japanese examples and practice fragments with Traditional Chinese explanations and source references. Run `node scripts/test-lesson14-october.mjs` for study-content and rendering checks, and `node scripts/test-textbook-exercises-offline.mjs` for cold offline navigation.
 
 ### Textbook grammar exercises for Lessons 14-20
 
