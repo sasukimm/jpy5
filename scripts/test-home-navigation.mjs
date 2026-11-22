@@ -26,6 +26,8 @@ assert.equal(storage.getItem(progressKey), '{"score":2}');
 
 const readJson = async file => JSON.parse(await readFile(file, "utf8"));
 const navigation = await readJson("assets/lesson-navigation.json");
+const classLesson = 15;
+const classHub = navigation.hubs[classLesson];
 const posts = await readJson("assets/posts.json");
 const slugs = posts.map(post => post.slug);
 const readerPath = post => `article-${post.slug}.html`;
@@ -110,18 +112,19 @@ try {
   const quickLinks = page.locator(".lesson-quick-sections a");
   const switcher = page.locator(".lesson-quick-switcher");
   const classHint = page.locator("[data-home-lesson-hint]");
+  const classLinks = modules.map(([module]) => navigation.routes[classLesson][module]);
 
   async function assertClassChoice() {
     await page.waitForFunction(() => !document.querySelector("[data-home-lesson-picker] select").disabled);
-    assert.equal(await picker.inputValue(), "14");
-    assert.equal(await classHint.innerText(), "課堂進度・第 14 課");
-    assert.deepEqual(await links(chapterLinks), modules.map(([module]) => navigation.routes[14][module]));
-    assert.equal(await page.locator("[data-selected-hub]").getAttribute("href"), navigation.hubs[14]);
+    assert.equal(await picker.inputValue(), String(classLesson));
+    assert.equal(await classHint.innerText(), `課堂進度・第 ${classLesson} 課`);
+    assert.deepEqual(await links(chapterLinks), classLinks);
+    assert.equal(await page.locator("[data-selected-hub]").getAttribute("href"), classHub);
   }
 
   await home(page);
   await assertClassChoice();
-  assert.equal(await resume.getAttribute("href"), "chapter-14.html");
+  assert.equal(await resume.getAttribute("href"), classHub);
   assert.match(await resume.innerText(), /開始學習/);
   assert.match(await page.locator("[data-last-visit-description]").innerText(), /跟隨課堂進度/);
   assert.deepEqual(await links(siteLinks), expectedSiteLinks);
@@ -131,7 +134,7 @@ try {
   for (const lesson of navigation.lessons) {
     await picker.selectOption(String(lesson));
     assert.equal(page.url(), base + "index.html");
-    assert.equal(await classHint.isVisible(), lesson === 14);
+    assert.equal(await classHint.isVisible(), lesson === classLesson);
     assert.deepEqual(await links(chapterLinks), modules.map(([module]) => navigation.routes[lesson][module]));
     assert.deepEqual(await chapterLinks.evaluateAll(nodes => nodes.map(node => node.lastChild.textContent.trim())), modules.map(([, label]) => label));
     assert.equal(await page.locator("[data-selected-hub]").getAttribute("href"), navigation.hubs[lesson]);
@@ -203,8 +206,8 @@ try {
   for (const invalid of ["{", "null", JSON.stringify({ ...visit, version: 2 }), JSON.stringify({ ...visit, lesson: 99 }), JSON.stringify({ ...visit, module: "../index" }), JSON.stringify({ ...visit, visitedAt: "invalid" })]) {
     await setVisit(page, invalid);
     await home(page);
-    assert.equal(await picker.inputValue(), "14");
-    assert.equal(await resume.getAttribute("href"), "chapter-14.html");
+    assert.equal(await picker.inputValue(), String(classLesson));
+    assert.equal(await resume.getAttribute("href"), classHub);
   }
   await setVisit(page, JSON.stringify({ ...visit, url: "https://example.invalid/escape", route: "javascript:throw 1" }));
   await home(page);
@@ -214,7 +217,7 @@ try {
   const staleRoute = route => route.fulfill({ json: stale });
   await page.route("**/assets/lesson-navigation.json", staleRoute);
   await home(page);
-  assert.equal(await resume.getAttribute("href"), "chapter-14.html");
+  assert.equal(await resume.getAttribute("href"), classHub);
   await goto(page, "chapter-14-reading.html");
   await switcher.locator("select").selectOption("19");
   await page.waitForURL(base + "chapter-19.html");
@@ -234,7 +237,7 @@ try {
   await goto(deniedPage, "chapter-15-history.html");
   await deniedPage.locator(".lesson-quick-switcher").waitFor();
   await home(deniedPage);
-  assert.equal(await deniedPage.locator("[data-last-visit-link]").getAttribute("href"), "chapter-14.html");
+  assert.equal(await deniedPage.locator("[data-last-visit-link]").getAttribute("href"), classHub);
   await denied.close();
   console.log("PASS device-only resume, malformed or missing routes, and disabled storage");
 
@@ -304,7 +307,9 @@ try {
   await page.route("**/assets/lesson-navigation.json", failedFetch);
   await goto(page, "index.html");
   assert.equal(await picker.isDisabled(), true);
-  assert.deepEqual(await links(chapterLinks), modules.map(([module]) => navigation.routes[14][module]));
+  assert.equal(await picker.inputValue(), String(classLesson));
+  assert.equal(await resume.getAttribute("href"), classHub);
+  assert.deepEqual(await links(chapterLinks), classLinks);
   await assertCards(page, sortedPosts.slice(0, 3));
   await goto(page, "articles.html");
   await assertCards(page, sortedPosts);
@@ -346,6 +351,90 @@ try {
   }
   console.log("PASS keyboard opening, dialog Escape, visible trigger focus, and disclosure Escape");
 
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await summary.click();
+  await page.locator(".home-page h1").click();
+  assert.equal(await page.locator(".site-utilities").getAttribute("open"), null);
+  await summary.click();
+  await siteLinks.last().click();
+  await page.waitForURL(base + "articles.html");
+
+  const touchContext = await isolatedContext({ hasTouch: true, isMobile: true });
+  try {
+    const touchPage = await touchContext.newPage();
+    await home(touchPage);
+    const menu = touchPage.locator(".site-utilities");
+    await menu.locator("summary").tap();
+    await menu.locator(".site-utility-panel").tap({ position: { x: 4, y: 4 } });
+    assert.equal(await menu.getAttribute("open"), "");
+    await menu.locator(".pwa-status").tap();
+    await touchPage.locator(".pwa-offline-dialog[open] [data-offline-close]").tap();
+    assert.equal(await menu.getAttribute("open"), "", "closing the dialog must preserve its menu");
+    await touchPage.waitForFunction(() => document.activeElement.matches(".site-utility-panel .pwa-status"));
+    const blank = { x: 6, y: 125 };
+    assert(await touchPage.evaluate(({ x, y }) => {
+      const target = document.elementFromPoint(x, y);
+      return target && !target.closest(".site-utilities, a, button, summary, label, input");
+    }, blank), "dismissal must work on non-interactive space");
+    await touchPage.touchscreen.tap(blank.x, blank.y);
+    assert.equal(await menu.getAttribute("open"), null);
+    assert.equal(touchPage.url(), base + "index.html");
+  } finally { await touchContext.close(); }
+  console.log("PASS outside-click navigation and touch dismissal with dialog focus restoration");
+
+  async function pendingBadge() {
+    const trigger = page.locator(".site-utilities > summary");
+    const before = await trigger.boundingBox();
+    const accessibleBefore = await trigger.ariaSnapshot();
+    await trigger.evaluate(node => {
+      node.setAttribute("aria-describedby", "existing-tools-description");
+      const note = document.createElement("span");
+      note.id = "existing-tools-description";
+      note.hidden = true;
+      note.textContent = "工具選單";
+      node.closest("details").after(note);
+    });
+    await page.evaluate(() => navigator.serviceWorker.dispatchEvent(new MessageEvent("message", { data: { type: "JPY5_OFFLINE_STATUS", ready: true, updateAvailable: true } })));
+    const badge = trigger.locator(".pwa-update-badge");
+    const status = page.locator(".site-utility-panel .pwa-status");
+    const inlineBadge = status.locator(".pwa-update-badge");
+    assert.equal(await badge.count(), 1);
+    assert.equal(await badge.isVisible(), true);
+    assert.equal(await badge.getAttribute("aria-hidden"), "true");
+    assert.equal(await inlineBadge.count(), 1);
+    assert.equal(await inlineBadge.isVisible(), false, "inline badge stays inside the closed menu");
+    assert.equal(await trigger.getAttribute("aria-describedby"), "existing-tools-description offline-update-notice");
+    assert.match(accessibleBefore, /工具/);
+    assert.equal(await trigger.ariaSnapshot(), accessibleBefore, "badge must preserve the summary's accessible name");
+    assert.equal(await page.locator("#offline-update-notice").getAttribute("role"), "status");
+    assert.equal(await page.locator("#offline-update-notice").getAttribute("aria-live"), "polite");
+    assert.equal(await page.locator(".site-utilities #offline-update-notice").count(), 0);
+    assert.equal(await page.locator(".site-utilities").getAttribute("open"), null);
+    assert.deepEqual(await trigger.boundingBox(), before, "badge must not move or resize the tools control");
+    const bounds = await badge.boundingBox();
+    assert(bounds.x >= before.x + before.width / 2 && bounds.y < before.y, "badge belongs on the upper-right corner");
+    assert(bounds.x + bounds.width <= await page.evaluate(() => innerWidth), "badge must fit the viewport");
+    const colors = await badge.evaluate(node => {
+      const style = getComputedStyle(node);
+      return { color: style.color, background: style.backgroundColor, pointerEvents: style.pointerEvents };
+    });
+    assert.deepEqual(colors, { color: "rgb(255, 255, 255)", background: "rgb(197, 34, 51)", pointerEvents: "none" });
+    await trigger.click();
+    assert.equal(await inlineBadge.isVisible(), true);
+    assert.equal(await inlineBadge.textContent(), "1");
+    assert.equal(await page.getByRole("button", { name: "離線內容有更新", exact: true }).count(), 1);
+    const labelBounds = await status.locator(".pwa-status-label").boundingBox();
+    const inlineBounds = await inlineBadge.boundingBox();
+    assert(inlineBounds.x >= labelBounds.x + labelBounds.width && inlineBounds.x - labelBounds.x - labelBounds.width <= 10,
+      "inline badge sits immediately after the label");
+    await page.evaluate(() => navigator.serviceWorker.dispatchEvent(new MessageEvent("message", { data: { type: "JPY5_OFFLINE_STATUS", ready: true, updateAvailable: false } })));
+    assert.equal(await badge.isVisible(), false);
+    assert.equal(await inlineBadge.isVisible(), false);
+    assert.equal(await trigger.getAttribute("aria-describedby"), "existing-tools-description");
+    assert.equal(await page.locator("#offline-update-notice").textContent(), "");
+    await page.keyboard.press("Escape");
+  }
+
   async function noOverflow(width, selector) {
     const sizing = await page.evaluate(selector => ({
       document: document.documentElement.scrollWidth, viewport: innerWidth,
@@ -378,10 +467,14 @@ try {
         const bounds = await noOverflow(width, selector);
         if (name === "home" && width === 390) assert(bounds.every(({ bottom }) => bottom < height), "all eight shortcuts must fit in the initial mobile viewport");
         if (name !== "study") {
+          await pendingBadge();
           await summary.click();
           await noOverflow(width, ".site-utility-panel button,.site-utility-panel a");
           await page.keyboard.press("Escape");
           await page.locator(".home-page h1,.reader-heading h1,.archive-page h1").click();
+        } else {
+          assert.equal(await page.locator(".pwa-update-badge,#offline-update-notice").count(), 0);
+          assert.equal(await page.locator(".site-header > .pwa-status").isVisible(), true);
         }
         if (screenshots && (layout === "desktop" || layout === "mobile") && name !== "archive") {
           await page.screenshot({ path: join(screenshots, `${name}-${layout}-${theme}.png`) });
@@ -404,6 +497,8 @@ try {
   await offline.setOffline(true);
   const freshHome = await offline.newPage();
   await home(freshHome);
+  assert.equal(await freshHome.locator("[data-home-lesson-picker] select").inputValue(), String(classLesson));
+  assert.deepEqual(await links(freshHome.locator(".home-module-nav a")), classLinks);
   await freshHome.locator("[data-posts-ready]").waitFor();
   await assertCards(freshHome, sortedPosts.slice(0, 3));
   const freshArchive = await offline.newPage();

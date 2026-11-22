@@ -36,11 +36,11 @@ for (const asset of assetMatches) await stat(join(root, asset));
 for (const page of pages) {
   const html = await readFile(join(root, page), "utf8");
   assert.match(html, /<link rel="manifest" href="manifest\.webmanifest">/, `${page} has no app manifest`);
-  assert.match(html, /<script src="assets\/pwa\.js(?:\?v=2)?" defer><\/script>/, `${page} does not register the PWA`);
+  assert.match(html, /<script src="assets\/pwa\.js(?:\?v=[234])?" defer><\/script>/, `${page} does not register the PWA`);
   assert.match(html, /<script src="assets\/analytics\.js" defer><\/script>/, `${page} does not load production analytics`);
   assert(assetMatches.includes(page), `${page} is missing from the offline inventory`);
 }
-assert.equal(pages.length, 77, "unexpected page count; review the offline inventory");
+assert.equal(pages.length, 93, "unexpected page count; review the offline inventory");
 assert.equal(manifest.scope, "/jpy5/");
 assert.equal(manifest.start_url, "/jpy5/");
 assert.match(serviceWorker, /importScripts\("assets\/offline-assets\.js"\)/);
