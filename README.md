@@ -18,7 +18,7 @@ Then open <http://localhost:8000>.
 
 ## Optional offline use and updates
 
-The default is online mode. Opening or installing the app does **not** download an offline package. Normal page requests and browser HTTP caching still work as usual. Open **離線設定** in the header (under **工具** on the homepage and article pages). Choose **下載離線內容** to save all 77 pages, including the articles, lesson text, vocabulary, exercises and required local assets. The dialog displays the package size, file progress, completion and actionable errors. Keep it open until **離線已就緒** appears.
+The default is online mode. Opening or installing the app does **not** download an offline package. Normal page requests and browser HTTP caching still work as usual. Open **離線設定** in the header (under **工具** on the homepage and article pages). Choose **下載離線內容** to save all study pages, including the articles, lesson text, vocabulary, exercises and required local assets. The dialog displays the package size, file progress, completion and actionable errors. Keep it open until **離線已就緒** appears.
 
 **All PDFs (including same-origin PDFs), external links, all MP3 audio (including same-origin recordings) and Google sync require internet and are excluded.** Links and audio players are labelled accordingly. Device pronunciation also requires an installed local Japanese voice; test it before relying on it offline.
 
@@ -45,7 +45,7 @@ node scripts/test-flashcard-prompts-layout.mjs
 node scripts/test-flashcard-update.mjs
 ```
 
-The browser suite requires Playwright and an installed Edge (or set JPY5_BROWSER_CHANNEL). It uses isolated profiles, a local server and no live accounts. It covers the online default, download/retry/cancellation, persistent-profile cold start, all 77 pages offline, PDFs/external links, incremental downloads, integrity failures, removal/re-enabling, partial eviction and scoped legacy-cache cleanup. Set `JPY5_OFFLINE_BASELINE_REF` to a prior Git revision to benchmark its service worker, or `JPY5_OFFLINE_BENCHMARK_ONLY=1` to benchmark the current worker. Both benchmark modes perform three single-file updates and log request count, response-body bytes, peak concurrent requests and elapsed time. `JPY5_OFFLINE_BENCHMARK_DELAY` controls the simulated server delay per asset in milliseconds and defaults to 20.
+The browser suite requires Playwright and an installed Edge (or set JPY5_BROWSER_CHANNEL). It uses isolated profiles, a local server and no live accounts. It covers the online default, download/retry/cancellation, persistent-profile cold start, all study pages offline, PDFs/external links, incremental downloads, integrity failures, removal/re-enabling, partial eviction and scoped legacy-cache cleanup. Set `JPY5_OFFLINE_BASELINE_REF` to a prior Git revision to benchmark its service worker, or `JPY5_OFFLINE_BENCHMARK_ONLY=1` to benchmark the current worker. Both benchmark modes perform three single-file updates and log request count, response-body bytes, peak concurrent requests and elapsed time. `JPY5_OFFLINE_BENCHMARK_DELAY` controls the simulated server delay per asset in milliseconds and defaults to 20.
 
 The adverb update suite exercises explicit package update from published revision `2cb386d9fe158d8ccc18b6d43c3f09d93afd8fee`; override `JPY5_PREVIOUS_REF` only when testing another prior release. The older teacher-exercise migration suite uses the pre-opt-in worker.
 
@@ -57,8 +57,8 @@ The dependency-free static site has a homepage, lesson hubs, study pages, and an
 
 1. Keep drafts outside the root HTML files and `assets/`, which are inputs to the public inventory.
 2. When the article is ready to publish through a site update, use an existing reader as the template for a root `article-<slug>.html`. Use a unique lowercase hyphenated slug, a Traditional Chinese title and summary, and working links to relevant study pages.
-3. Add the entry to `assets/posts.json` with `slug`, `title`, `summary`, `category`, `publishedAt` (Hong Kong date in YYYY-MM-DD), and `readingMinutes`. Keep the original `publishedAt` for edits. Use the optional `updatedAt` and show the revision date in the reader when applicable. Keep the metadata, reader heading, and dates in agreement.
-4. Update the static fallback cards in `articles.html` (all articles) and `index.html` (latest three). Sort by publication date descending, then by slug ascending for equal dates. The lists load from metadata when JavaScript and the data file are available.
+3. Add the entry to `assets/posts.json` with `slug`, `title`, `summary`, `category`, `publishedAt` (Hong Kong date in YYYY-MM-DD), and `readingMinutes`. Keep the original `publishedAt` for edits. Use the optional `updatedAt` and show the revision date in the reader when applicable. Keep the metadata, reader heading, and dates in agreement. Add optional `topic` as `grammar` (文法詞彙), `conversation` (會話聆聽), `reading` (閱讀理解), `writing` (寫作練習), or `study` (學習方法), and optional `lesson` as a positive integer. Omit `lesson` for general articles. Keep `category` as the original editorial label. Missing or invalid optional fields display as 其他 / 通用 without blocking the archive.
+4. Update the static fallback cards in `articles.html` (all articles) and `index.html` (latest three). Sort by publication date descending, then by slug ascending for equal dates. In archive rows, keep `data-topic`, `data-lesson` (`general` when omitted), and visible topic/lesson metadata in agreement with the JSON. Place the title, complete summary, then metadata inside each link. The archive filters work on these fallback rows even if the data request fails; without JavaScript all articles remain readable. The lists load from metadata when JavaScript and the data file are available. Topic and lesson counts are derived automatically; no separate count updates are needed.
 5. Run the checks below before previewing. Restart a running public preview after regenerating the inventory because the server reads the allowlist at startup. Verify the reader, summary, dates, and related lesson links in the preview.
 
 ```bash
@@ -68,6 +68,14 @@ node scripts/test-pwa.mjs
 node scripts/test-offline-manifest.mjs
 node scripts/serve-public.mjs
 ```
+
+### Article answers and explanations
+
+Exercise articles load `assets/article-answers.css?v=1` and the deferred `assets/article-answers.js?v=1`. Assign each question a unique number across the whole article, including split lists, and explicitly point to its corresponding answer. Keep the existing answer list or disclosure as the source of truth. For example, pair `<li data-article-question="2" data-answer-id="article-answer-2">` with `<li id="article-answer-2" data-article-answer>`. Each answer ID must be unique in the document and inside the same `.reader-article`.
+
+Wrap only the actual blank characters in `<span data-answer-blank>＿＿</span>`, or wrap the original fullwidth spaces inside the parentheses. Preserve the original characters, surrounding Japanese spans, options and list numbering. Multiple blanks in a question share one complete answer. Questions without a blank receive an `答案與解釋` button automatically. The feature clones only the explicitly linked answer into one reusable native dialog. Keep a concise Traditional Chinese explanation beside each source answer, preserve reference-answer labels, and mark Japanese phrases with `lang="ja"`. Do not copy answers into JavaScript. Existing answer sections remain usable with JavaScript disabled or native dialogs unavailable. These pop-ups do not score or save progress.
+
+After editing, run `node scripts/generate-offline-manifest.mjs` and `node scripts/test-article-answers.mjs`, followed by the navigation and offline checks above. The focused suite compares the original 24 exercise articles against Git revision `35b33d9` independently of the new annotations, permits append-only explanations, derives counts from that source, and checks future annotated articles generically. `JPY5_ARTICLE_BASELINE_REF` may select a compatible unannotated historical revision. The suite covers every question/control, fallback answer access, keyboard focus, mobile light/dark layout, a fresh optional offline package and updating the installed package from the baseline while retaining a progress sentinel. Screenshots go to the temporary `jpy5-article-answers` folder, or `JPY5_ARTICLE_SCREENSHOTS`.
 
 ### Chapter 13 complete edition
 
@@ -138,6 +146,8 @@ Most lesson material and audio are adapted for study use from [ttrw.jp](https://
 # Optional Google progress sync
 
 JPY5 works without an account and retains progress in browser localStorage. Google login is optional; after first login the app merges the existing local records with the account's cloud records, keeps a local guest snapshot for sign-out, and writes future changes locally first before batching them to Firestore. Cloud state is one owner-only document at `jpy5Users/{uid}` with `schemaVersion`, `progress` (the existing localStorage payloads keyed by their original localStorage keys), and a server `updatedAt` timestamp.
+
+Guest and account sessions keep separate local progress and unfinished quizzes. On upgrading an older installation with a guest backup but no recorded owner, the app keeps the previous device snapshot in localStorage under `jpy5-sync-recovery-before-owner-tracking` and restores the known guest snapshot.
 
 Sync includes Lessons 13–20. Returning logins merge offline records, writes use a Firestore transaction, and an account listener receives other-device progress. Histories merge by attempt ID, bookmarks retain the existing conservative union behavior, and dated quiz results resolve stale wrong-answer flags without removing unattempted mistakes. Theme preferences and unfinished quiz drafts remain device-local. The existing schema version, account path and owner-only rules are unchanged.
 

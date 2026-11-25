@@ -1,4 +1,11 @@
-window.JPY5ReadingExam = ({state, questions, save, render, prompt, option, thresholds, shuffle = false}) => {
+window.JPY5ReadingExam = ({state, questions, save, render, prompt, option, thresholds, shuffle = false, recordAnswer}) => {
+  state.examAnswers ??= {};
+
+  function markExamChange() {
+    const previous = Number.isSafeInteger(state.examRevision) ? state.examRevision : 0;
+    state.examRevision = Math.max(Date.now(), previous + 1);
+  }
+
   function optionOrder(question) {
     const indices = question.options.map((_, index) => index);
     return state.examOrder?.[question.id] ?? indices;
@@ -29,7 +36,8 @@ window.JPY5ReadingExam = ({state, questions, save, render, prompt, option, thres
         const checked = state.examAnswers[question.id] === choice ? " checked" : "";
         return `<label><input type="radio" name="${question.id}" value="${choice}"${checked}${result ? " disabled" : ""}> ${option(question, question.options[choice])}</label>`;
       }).join("");
-      return `<article><span>${String(index + 1).padStart(2, "0")}</span><h3>${prompt(question)}</h3><div>${choices}</div></article>`;
+      const answer = result ? `<p>正確答案：${option(question, question.options[question.answer])}</p>` : "";
+      return `<article><span>${String(index + 1).padStart(2, "0")}</span><h3>${prompt(question)}</h3><div>${choices}</div>${answer}</article>`;
     }).join("");
     const [strong, review] = thresholds;
     const message = result?.score >= strong ? "掌握得很好！"
@@ -46,6 +54,7 @@ window.JPY5ReadingExam = ({state, questions, save, render, prompt, option, thres
     stage.querySelectorAll(".exam-list input").forEach(input => {
       input.onchange = () => {
         state.examAnswers[input.name] = Number(input.value);
+        markExamChange();
         save();
         statusNode.textContent = status();
       };
@@ -58,7 +67,10 @@ window.JPY5ReadingExam = ({state, questions, save, render, prompt, option, thres
       }
       const wrong = new Set(state.wrong);
       const results = questions.map(question => {
-        const ok = state.examAnswers[question.id] === question.answer;
+        const choice = state.examAnswers[question.id];
+        const ok = choice === question.answer;
+        if (recordAnswer) recordAnswer(question, choice);
+        else state.answered[question.id] = choice;
         if (ok) wrong.delete(question.id);
         else wrong.add(question.id);
         return {id: question.id, ok};
@@ -67,6 +79,7 @@ window.JPY5ReadingExam = ({state, questions, save, render, prompt, option, thres
       state.wrong = [...wrong];
       state.examResult = {score, total: questions.length};
       state.attempts.push({date: new Date().toISOString(), ...state.examResult, results});
+      markExamChange();
       save();
       render();
       stage.querySelector(".reading-result").focus();
@@ -75,6 +88,9 @@ window.JPY5ReadingExam = ({state, questions, save, render, prompt, option, thres
       state.examAnswers = {};
       state.examResult = null;
       delete state.examOrder;
+      markExamChange();
+      // Keep an empty restart distinguishable from a device opening its first exam.
+      state.examGeneration = state.examRevision;
       save();
       render();
       stage.querySelector(".exam-list input").focus();
